@@ -4,7 +4,8 @@ classdef mesh
     properties (SetAccess=private)
         Vertices,
         Faces,
-        CollisionMesh
+        CollisionMesh,
+        Triangulation
     end
     
     methods
@@ -14,6 +15,7 @@ classdef mesh
             obj.Vertices = vertices;
             obj.Faces = faces;
             obj.CollisionMesh = collisionMesh(vertices);
+            obj.Triangulation = triangulation(faces,vertices);
         end
         
         function intersects = intersectsWith(obj, other)
@@ -23,6 +25,10 @@ classdef mesh
             % Use convex collision for now but maybe go to more complex
             % collision some time in the future to allow for cooler shapes
             intersects = checkCollision(obj.CollisionMesh, other.CollisionMesh);
+        end
+        
+        function plot(obj)
+            trimesh(obj.Triangulation)
         end
     end
     
