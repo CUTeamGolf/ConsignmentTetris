@@ -1,11 +1,10 @@
 % change this to wherever you installed the library repo
 % We should probably move the library folder to the ConsigmentTetris repo
 %   such that this path can be relative and work without modifications.
-base = "/home/marcus/matlab/additional-resources/Simscape-Multibody-Contact-Forces-Library-20.2.5.0/";
+base = "Simscape-Multibody-Contact-Forces-Library-20.2.5.0/";
 
 % TODO: test if these UNIX-style paths work on Windows
 items = [
-    "work",
     "Examples",
     "Examples/2D/Ball_Bearing",
     "Examples/2D/Ball_Bearing/Images",
@@ -25,7 +24,6 @@ items = [
     "Examples/2D/Mini_Golf",
     "Examples/2D/Mini_Golf/Images",
     "Examples/2D/Mini_Golf/Libraries",
-    "Examples/2D/Mini_Golf/Results",
     "Examples/2D/Mini_Golf/Scripts_Data",
     "Examples/2D/Mini_Golf/Slides_Recordings",
     "Examples/2D/Simple/Collision",
