@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/marcus/GitHub/ConsignmentTetris/src/process_optimiser.cc
+iostream
+-
+algorithm
+-
+tuple
+-
+stack
+-
+utility
+-
+process_optimiser.h
+/home/marcus/GitHub/ConsignmentTetris/src/process_optimiser.h
+
+/home/marcus/GitHub/ConsignmentTetris/src/process_optimiser.h
+vector
+-
+bitset
+-
+iostream
+-
+
