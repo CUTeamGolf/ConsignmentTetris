@@ -2,7 +2,7 @@ pipeline {
   agent {
 	docker {
       image 'matlab:r2020b'
-      args  '--mac-address 02:42:ac:11:ff:ff --entrypoint="" --user matlab:root' // Fix MAC address so that only one instance can run at once for licensing reasons, and disable entrypoint
+      args  '-i --mac-address 02:42:ac:11:ff:ff --entrypoint='' --user matlab:root' // Fix MAC address so that only one instance can run at once for licensing reasons, and disable entrypoint
     }
   }
   
