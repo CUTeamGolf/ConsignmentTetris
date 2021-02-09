@@ -17,4 +17,12 @@ pipeline {
 			}
 		}
 	}
+  
+	post {
+		always {
+			archiveArtifacts artifacts: 'artifacts/*', fingerprint: true
+			cobertura coberturaReportFile: 'artifacts/cobertura.xml'
+			junit 'artifacts/junittestresults.xml'
+		}
+	}
 }
