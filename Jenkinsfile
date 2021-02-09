@@ -9,7 +9,6 @@ pipeline {
   stages {
 	stage('Version') {
 	  steps {
-	    sh 'whoami'
 	    sh 'matlab -batch "version"'
 	  }
 	}
