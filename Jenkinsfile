@@ -6,6 +6,7 @@ pipeline {
 	stages {
 		stage('Run MATLAB Command') {
 			steps {
+				sh 'whoami'
 				runMATLABCommand "disp('Hello World!')"
 			}
 		} 
