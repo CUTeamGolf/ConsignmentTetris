@@ -1,7 +1,7 @@
 % change this to wherever you installed the library repo
 % We should probably move the library folder to the ConsigmentTetris repo
 %   such that this path can be relative and work without modifications.
-base = "Simscape-Multibody-Contact-Forces-Library-20.2.5.0/";
+base = "/home/ana/MATLAB/projects/ConsignmentTetrisSimulink/Simscape-Multibody-Contact-Forces-Library-20.2.5.0/";
 
 % TODO: test if these UNIX-style paths work on Windows
 items = [
