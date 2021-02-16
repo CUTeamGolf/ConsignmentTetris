@@ -1,99 +1,182 @@
+#include <utility>
+#include <algorithm>
+#include <tuple>
 #include "process_optimiser.h"
 
-/**
- * A high-level description of the algorithm to implement
+/* CO-ORDINATE SYSTEM REMINDER:
  *
- * INPUT:
- *  - The position of the "deepest-bottom-leftmost" corner of the box
- *    (i.e. the corner with the lowest possible values for x,y,z) as
- *    well as its dimensions (length, width, height).
- *  - A list of length n with information about a superset of
- *    the items currently in the box. Let x_i, y_i, z_i be the
- *    position of the "deepest-bottom-leftmost" corner of the ith
- *    item and l_i, w_i, h_i be the corresponding dimensions.
- *  - Information about the item to be placed (l, w, h).
- *
- * PARAMETERS:
- *  - M (granularity for LER)
- *  - M' (granularity for stability check)
- *  - ERROR (deltaZ for determining if two items are at same height)
- *  - W_1 and W_2  weights for the two heuristics
- *
- * PSEUDOCODE:
- *
- * // Phase 1: get a list of Empty-Maximum-Space (EMS) candidates
- * sort the placed items by z + h (i.e. by height of the top face)
- * occupied_space <- M x M boolean matrix initialised to 0
- * candidates     <- empty list
- *
- * for i in n .. 0 do
- *   fill occupied_space with a 1 for each XY co-ordinate covered by the shadows of
- *       the [i .. n]th objects projected onto the XY plane
- *   if z_i + h_i is just slightly below previous height, skip this iteration
- *   MERs <- find_all_maximum_empty_rectangles(occupied_space)             // (*)
- *   foreach (ll, ur) in MERs do
- *     push ((ll.x, ll.y, z_i), (ur.x, ur.y, z_i + h_i)) to candidates
- *   end
- * end
- *
- * // Phase 2: filter and sort the candidates
- * P             <- empty list
- * foreach c in candidates do
- *   foreach allowed rotation of item i do
- *     if item i fits in EMS then
- *       push (c, rotation, most_stable_pos) to P
- *     endif
- *   end
- * end
- *
- * only keep the best candidates among those with same (ll, ur) (in XY space)
- *
- * sort items in P in non-decreasing order by a score calculated as follows:
- *   W_1 * [(box_height - c.z) * 100 + (box_width - c.y) * 10 + (box_length - c.x)] + (?)
- *   W_2 * [XY area of c - XY area of item i]
- *
- * for  i in 0 .. length(P) do
- *   if item_is_stable(i, rotation) then use this solution with the
- *       corresponding stable position                                    // (**)
- * end
- *
- * if no stable solutions found
- *   say "next box"
- *
- * NOTES ON COMPLEMENTARY FUNCTIONS:
- *
- * (*) find_all_maximum_empty_rectangles:
- *   This function finds all rectangles covering only 0's
- *   This is possible to do in O(M^2) time, but
- *   the specific details are not here yet.
- *
- * (**) item_is_stable:
- *   make M' x M' boolean matrix of candidate rectangle
- *   foreach item packed directly under (to some error) do
- *     add 1's to the matrix where the item is located
- *   end
- *   for all possible lower left corners to place the item do
- *     find number of 1's in the area (can be done efficiently with pre-compute)
- *   end
- *   select the bottomost-leftmost corner such that stability (proportion of 1's)
- *       is within some margin of tolerance
- *   otherwise return false
- *
- *   Ideas: keep track of ur of placed items so no pre-processing
- *       where know it's all 0s
- *          let C[x, y] be the sum of 1's in M[0 .. x, 0 .. y], then
- *       can compute number of 1's in an area with
- *       C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
+ *                 w
+ *       +------+  i
+ *    y  |      |  d
+ *    ^  O------+  t
+ *    |  ^length   h
+ *    |  |
+ *    |   \_(x, y)
+ *    +------> x
  */
 
-bool process_optimiser_main(const double * const box_position,
-        const double * const box_dimensions, const int tetromino_id,
-        const int tetrominos, double * tetromino_position,
-        double * tetromino_rotation) {
+/** ---------------------- CLASS STUFF ------------------------------------ */
 
-    tetromino_position[0] = 10;
-    tetromino_position[1] = 20;
-    tetromino_position[2] = 30;
+bool MaximumEmptyCuboid::operator < (const MaximumEmptyCuboid & other) const {
+    // TODO: implement properly
+    if (other.z < this->z)
+        return false;
+    else
+        return true;
+}
+
+MaximumEmptyCuboid::MaximumEmptyCuboid(
+        const MaximumEmptyRectangle & mer, int z, int height) {
+    // TODO: ...
+}
+
+bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width, double z,
+                                             const std::vector<MaximumEmptyCuboid> &candidates) {
+    // TODO: initialise
+    bool ground[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+
+    // TODO: iterate all items at top face within some error of z
+    // TODO: optimisation -- use std::lower_bound to find first item faster
+    for (int i = 0; i < 10; i++) {
+        // fill_occupied_space(ground, c);
+    }
+
+    int C[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+
+    // TODO: precompute sums of 1s in C
+
+    // TODO: iterate lower left corners
+    // TODO: if within some error, return true and modify solution co-ords
+
+    // TODO: remove this stub
+    this->stable_position = std::make_pair(5, 6);
+    return false;
+}
+
+std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
+    if (!this->has_computed_stable_position) {
+        throw std::runtime_error("Attempt to get stable position when "
+                                 "it doesn't exist or hasn't been computed.");
+    } else {
+        return std::tuple<int, int, int>(this->stable_position.first,
+                                         this->stable_position.second, this->z);
+    }
+}
+
+bool MaximumEmptyCuboid::can_fit_item(int item_length, int item_width, double item_height) {
+    // TODO: implement
+    return false;
+}
+
+BoxTetromino::BoxTetromino(double x, double y, double z,
+                           double l, double w, double h, const PackingBox & pb) :
+    real_x(x), real_y(y), real_z(z), real_length(l), real_width(w), real_height(h) {
+    // TODO: initialize super fields based on this info
+    this->x = 0;
+    this->y = 0;
+    this->z = 0.0;
+    // TODO: ...
+}
+
+/** ------------------------------ utilies ---------------------------------*/
+
+template<size_t array_length, size_t array_width>
+void fill_occupied_space(bool occupied_space[array_length][array_width],
+                         const Cuboid & c) {
+    // TODO: ...
+}
+
+std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
+        bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY]) {
+    // TODO: ...
+
+    // TODO: remove stub
+    std::vector<MaximumEmptyRectangle> result;
+    result.push_back({1, 1, 10, 10});
+    return result;
+}
+
+/** ------------------------------ phase 1 ---------------------------------*/
+
+std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
+        std::vector<Cuboid> cuboids, const PackingBox & pb) {
+
+    // TODO: sort cuboids by z + h
+
+    bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY];
+    std::vector<MaximumEmptyCuboid> candidates;
+
+    // TODO: add initial iteration with no obstacles
+    // TODO: make sure correct height looked at, not height of *c
+
+    for (auto c = cuboids.rbegin(); c != cuboids.rend(); c++) {
+        fill_occupied_space<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(occupied_space, *c);
+        // TODO: check for slight delta_h since last iter, and continue; if so
+
+        std::vector<MaximumEmptyRectangle> mers =
+            find_all_maximum_empty_rectangles(occupied_space);
+
+        // TODO: loop through mers and add results to candidates
+        for (auto & mer : mers) {
+            // TODO: explain
+            candidates.emplace_back(mer, c->z + c->height,
+                                    pb.height - c->z - c->height);
+        }
+    }
+
+    return candidates;
+}
+
+/** ------------------------------ phase 2 ---------------------------------*/
+
+std::tuple<double, double, double> pick_best_candidate(
+                          int length, int width, int height,
+                          std::vector<MaximumEmptyCuboid> candidates) {
+
+    // sort the candidates first because filtering is more expensive
+    sort(candidates.begin(), candidates.end());
+
+    // find the first candidate that works
+    for (auto c = candidates.begin(); c != candidates.end(); c++) {
+        // TODO: check if item fits, class method
+
+        // TODO: check if item has stable position, if so use it,
+        //  cast things to doubles, and return
+    }
+
+    // TODO: remove stub
+    if (!candidates.empty())
+        return candidates[0].get_stable_position();
+    else
+        return std::make_tuple(-1.0, -1.0, -1.0);
+}
+
+/** ------------------------------ driver ----------------------------------*/
+
+bool process_optimiser_main(const double * const box_position,
+                            const double * const box_dimensions, const int tetromino_id,
+                            const int tetrominos, double * tetromino_position,
+                            double * tetromino_rotation) {
+
+    // TODO: construct box object
+    PackingBox test_pb = {0, 0, 0, 1000, 1000, 1000};
+
+    // TODO: construct cuboids from the given information
+
+    // TODO: remove stub
+    std::vector<Cuboid> cuboids;
+    BoxTetromino bt_test(8, 4, 0, 10, 10, 20, test_pb);
+    cuboids.push_back(bt_test);
+
+    // find all candidates
+    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids(cuboids, test_pb);
+
+    // pick the best one
+    std::tuple<int, int, int> sol = pick_best_candidate(10, 5, 8, candidates);
+
+    tetromino_position[0] = double(std::get<0>(sol));
+    tetromino_position[1] = double(std::get<1>(sol));
+    tetromino_position[2] = double(std::get<2>(sol));
 
     tetromino_rotation[0] = 1;
 
