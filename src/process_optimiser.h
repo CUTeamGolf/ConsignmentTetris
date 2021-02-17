@@ -2,12 +2,31 @@
 #define PROCESS_OPTIMISER_HEADER
 
 #include <vector>
+#include <bitset>
+#include <iostream>
 
 #define MER_LENGTH_GRANULARITY 1000
 #define MER_WIDTH_GRANULARITY  1000
 #define MER_HEIGHT_GRANULARITY 1000
 #define STABILITY_LENGTH_GRANULARITY 100
 #define STABILITY_WIDTH_GRANULARITY 100
+
+//#define ENABLE_DEBUG
+#ifdef ENABLE_DEBUG
+    #define debug(msg) {std::cout << msg << std::endl;};
+#else
+    #define debug(msg) {};
+#endif
+
+/**** #define GET_FULL_PROCESS_OPTIMISER_HEADER ****/
+// The matlab-C++ linker only supports a subset
+// of C++ and the standard library, so incompatible
+// function prototypes are masked unless this flag
+// is defined. Please define it before including this
+// header file if you want to access those functions
+// as well for e.g. unit testing.
+// TODO: figure out if the matlab compiler has any
+//    specific flags we can #ifndef on instead
 
 /**
  * Represents the free space in the
@@ -123,9 +142,11 @@ public:
  * @param occupied_space -- the boolean matrix
  * @param c
  */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 template<size_t array_length, size_t array_width>
 void fill_occupied_space(bool occupied_space[array_length][array_width],
                          const Cuboid & c);
+#endif
 
 /**
  * Finds all the MERs of 0s in the passed boolean matrix. All these
@@ -133,11 +154,16 @@ void fill_occupied_space(bool occupied_space[array_length][array_width],
  *  (i) all bools inside them are false
  *  (ii) no row above or column to the side should contain all 0s
  *
+ *  Matlab does not allow returning custom types, so the result
+ *  is stored in the result parameter passed as a reference.
+ *
  * @param occupied_space -- a boolean matrix
  * @return
  */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
         bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY]);
+#endif
 
 /**
  * Finds all the MECs in the box based on the cuboids already there.
@@ -147,8 +173,11 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
  * @param cuboids
  * @return
  */
+
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, const PackingBox & pb);
+#endif
 
 /**
  * Given a list of candidates, picks a position from the best
@@ -166,11 +195,16 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
  *   When no solution is found, returns (-1, -1, -1)
  *   TODO: throw exception instead?
  */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::tuple<double, double, double> pick_best_candidate(
         int length, int width, int height,
         std::vector<MaximumEmptyCuboid> candidates);
+#endif
 
 // TODO: add process_optimiser_main when it makes more sense
+bool process_optimiser_main(const double * const box_pos,
+                            const double * const box_dim,
+                            double * res);
 
 /**
  * A high-level description of the algorithm to implement

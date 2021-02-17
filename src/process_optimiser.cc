@@ -1,4 +1,5 @@
 #include <utility>
+#include <iostream>
 #include <algorithm>
 #include <tuple>
 #include "process_optimiser.h"
@@ -50,7 +51,8 @@ bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width, do
 
     // TODO: remove this stub
     this->stable_position = std::make_pair(5, 6);
-    return false;
+    this->has_computed_stable_position = true;
+    return true;
 }
 
 std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
@@ -84,15 +86,18 @@ template<size_t array_length, size_t array_width>
 void fill_occupied_space(bool occupied_space[array_length][array_width],
                          const Cuboid & c) {
     // TODO: ...
+    occupied_space[0][0] = true;
+    occupied_space[4][3] = true;
 }
 
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
         bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY]) {
     // TODO: ...
+    std::vector<MaximumEmptyRectangle> result;
 
     // TODO: remove stub
-    std::vector<MaximumEmptyRectangle> result;
     result.push_back({1, 1, 10, 10});
+
     return result;
 }
 
@@ -135,6 +140,7 @@ std::tuple<double, double, double> pick_best_candidate(
 
     // sort the candidates first because filtering is more expensive
     sort(candidates.begin(), candidates.end());
+    // TODO: copy of candidates sorted by z for has_stable_position?
 
     // find the first candidate that works
     for (auto c = candidates.begin(); c != candidates.end(); c++) {
@@ -142,6 +148,7 @@ std::tuple<double, double, double> pick_best_candidate(
 
         // TODO: check if item has stable position, if so use it,
         //  cast things to doubles, and return
+        c->has_stable_position(length, width, height, candidates);
     }
 
     // TODO: remove stub
@@ -154,9 +161,8 @@ std::tuple<double, double, double> pick_best_candidate(
 /** ------------------------------ driver ----------------------------------*/
 
 bool process_optimiser_main(const double * const box_position,
-                            const double * const box_dimensions, const int tetromino_id,
-                            const int tetrominos, double * tetromino_position,
-                            double * tetromino_rotation) {
+                            const double * const box_dimensions,
+                            double * tetromino_position) {
 
     // TODO: construct box object
     PackingBox test_pb = {0, 0, 0, 1000, 1000, 1000};
@@ -168,6 +174,8 @@ bool process_optimiser_main(const double * const box_position,
     BoxTetromino bt_test(8, 4, 0, 10, 10, 20, test_pb);
     cuboids.push_back(bt_test);
 
+    debug("Got here");
+
     // find all candidates
     std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids(cuboids, test_pb);
 
@@ -178,7 +186,19 @@ bool process_optimiser_main(const double * const box_position,
     tetromino_position[1] = double(std::get<1>(sol));
     tetromino_position[2] = double(std::get<2>(sol));
 
-    tetromino_rotation[0] = 1;
-
     return true;
+}
+
+// for testing the code within the IDE
+int main() {
+    double box_pos[3] = {0, 0, 0};
+    double box_dim[3] = {1000, 1000, 1000};
+    double result[3];
+
+    process_optimiser_main(box_pos, box_dim, result);
+
+    std::cout << "Resulting position:" << std::endl
+            << "\tx: " << result[0] << std::endl
+            << "\ty: " << result[1] << std::endl
+            << "\tz: " << result[2] << std::endl;
 }
