@@ -81,8 +81,10 @@ struct BoxTetromino : public Cuboid {
  * This POD is mainly used by @code find_all_maximum_rectangles
  */
 struct MaximumEmptyRectangle {
-    int x, y;
-    int length, width;
+    // lower left corner
+    int llx, lly;
+    // upper right corner
+    int urx, ury;
 };
 
 /**
@@ -201,10 +203,22 @@ std::tuple<double, double, double> pick_best_candidate(
         std::vector<MaximumEmptyCuboid> candidates);
 #endif
 
-// TODO: add process_optimiser_main when it makes more sense
-bool process_optimiser_main(const double * const box_pos,
-                            const double * const box_dim,
-                            double * res);
+/**
+ * TODO: docs
+ * @param box_points
+ * @param item_points
+ * @param item_points_size
+ * @param item_indices
+ * @param item_indices_size
+ * @param tetromino_position
+ * @return
+ */
+bool process_optimiser_main(const double * box_points,
+                            const double * item_points,
+                            const int item_points_size,
+                            const int * item_indices,
+                            const int item_indices_size,
+                            double * tetromino_position);
 
 /**
  * A high-level description of the algorithm to implement
