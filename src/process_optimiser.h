@@ -51,6 +51,8 @@ struct PackingBox {
 struct Cuboid {
     int x, y, z;
     int length, width, height;
+
+    bool operator<(const Cuboid& other) const;
 };
 
 /**
@@ -106,7 +108,9 @@ public:
     // construct from MER object
     MaximumEmptyCuboid(const MaximumEmptyRectangle &mer, int z, int height);
 
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
     friend std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec);
+#endif
 
     /**
      * Checks if this MEC has a stable position for an item with XY
@@ -120,8 +124,8 @@ public:
      * @param candidates -- TODO: explain
      * @return whether the item has a stable position in this MEC or not.
      */
-    bool has_stable_position(int item_length, int item_width, double z,
-                             const std::vector<MaximumEmptyCuboid> & candidates);
+    bool has_stable_position(int item_length, int item_width,
+                             const std::vector<Cuboid> &cuboids);
 
     /**
      * TODO: explain
@@ -130,7 +134,7 @@ public:
     std::tuple<int, int, int> get_stable_position();
 
     // TODO: docs
-    bool can_fit_item(int item_length, int item_width, double item_height);
+    bool can_fit_item(int item_length, int item_width, int item_height);
 
     // TODO: docs, for sorting the candidates based on heuristic
     //    described in pseudo-code
@@ -218,7 +222,7 @@ std::tuple<double, double, double> pick_best_candidate(
 bool process_optimiser_main(const double * box_points,
                             const double * item_points,
                             const int item_points_size,
-                            const int * item_indices,
+                            const double * item_indices,
                             const int item_indices_size,
                             double * tetromino_position);
 

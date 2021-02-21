@@ -8,12 +8,29 @@
 
 /** ---------------------- CLASS STUFF ------------------------------------ */
 
+/**
+ * Comparison operator that returns true if this is
+ * a better candidate than other.
+ *
+ * A candidate is better if:
+ * - it has a lower z co-ordinate
+ * - none of the above, but it has a lower y co-ordinate
+ * - none of the above, but it has a lower x co-ordinate
+ * - none of the above but the volume is smaller
+ * @param other
+ * @return
+ */
 bool MaximumEmptyCuboid::operator < (const MaximumEmptyCuboid & other) const {
-    // TODO: implement properly
-    if (other.z < this->z)
-        return false;
-    else
-        return true;
+    // we sort by volume in this case
+    if (std::tie(this->z, this->y, this->x) == std::tie(other.z, other.y, other.x)) {
+        return (this->z * this->y * this->x) < (other.z * other.y * other.x);
+    } else {
+        return std::tie(this->z, this->y, this->x) < std::tie(other.z, other.y, other.x);
+    }
+}
+
+bool Cuboid::operator<(const Cuboid &other) const {
+    return this->z + this->height < other.z + other.height;
 }
 
 MaximumEmptyCuboid::MaximumEmptyCuboid(
@@ -27,6 +44,7 @@ MaximumEmptyCuboid::MaximumEmptyCuboid(
     this->height = height;
 }
 
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
 //    os << "(" << mec.x << ", " << mec.y << ", " << mec.z
 //        << ") dim=[" << mec.length << ", " << mec.width
@@ -35,24 +53,89 @@ std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
         << mec.length << " " << mec.width << " " << mec.height << ";";
     return os;
 }
+#endif
 
-bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width, double z,
-                                             const std::vector<MaximumEmptyCuboid> &candidates) {
-    // TODO: initialise
-    bool ground[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+// forward declare
+template <size_t array_length, size_t array_width>
+void fill_occupied_space(bool occupied_space[array_length][array_width], const Cuboid & c);
+/**
+ * TODO: explain!
+ *
+ * cuboids must be sorted!
+ * @param item_length
+ * @param item_width
+ * @param cuboids
+ * @return
+ */
+bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width,
+                                             const std::vector<Cuboid> &cuboids) {
 
-    // TODO: iterate all items at top face within some error of z
-    // TODO: optimisation -- use std::lower_bound to find first item faster
-    for (int i = 0; i < 10; i++) {
-        // fill_occupied_space(ground, c);
+    // base case, box floor is supporting TODO: remove hack
+    if (true || this->z == 0) {
+        this->stable_position = std::pair<int, int>(this->x, this->z);
+        return true;
     }
 
-    int C[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+    // TODO: this parameter has to be the same as the other one!
 
+    // initialise 2d array to all false
+    bool ground[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+    for (auto & x : ground) {
+        for (bool & y : x) {
+            y = false;
+        }
+    }
+
+    // find the first cuboid that has a top-face
+    // at height equal to the MEC's z value
+    Cuboid temp = {0, 0, this->z, 0, 0, 0};
+    auto supportingCuboid = std::lower_bound(cuboids.begin(), cuboids.end(), temp);
+
+    // iterate all the supporting cuboids, and note their supporting area
+    while (supportingCuboid != cuboids.end() && supportingCuboid->z + supportingCuboid->height == this->z) {
+        // fill_occupied_space
+        fill_occupied_space<STABILITY_LENGTH_GRANULARITY, STABILITY_WIDTH_GRANULARITY>(ground, *supportingCuboid);
+    }
+
+    // sum[x][y] gives the number of 1's in the area ground[0..x][0..y] (inclusive end)
+    int sum[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
     // TODO: precompute sums of 1s in C
+    for (int x = 0; x < STABILITY_LENGTH_GRANULARITY; ++x) {
+        for (int y = 0; y < STABILITY_WIDTH_GRANULARITY; ++y) {
+            if (x == 0 && y == 0) {
+                // base case, no previously computed entries to count
+                sum[x][y] = 0;
+            } else if (x == 0) {
+                // we use the column below
+                sum[x][y] = sum[x][y - 1];
+            } else if (y == 0) {
+                // we use the previous row
+                sum[x][y] = sum[x - 1][y];
+            } else {
+                // we end up counting one rectangle twice, so remove it
+                sum[x][y] = sum[x - 1][y] + sum[x][y - 1] - sum[x - 1][y - 1];
+            }
+            // count the current entry
+            sum[x][y] += ground[x][y] ? 1 : 0;
+        }
+    }
 
     // TODO: iterate lower left corners
     // TODO: if within some error, return true and modify solution co-ords
+
+    // iterate y first because we value as low y as possible
+    for (int lly = 0; lly < STABILITY_WIDTH_GRANULARITY; ++lly) {
+        for (int llx = 0; llx < STABILITY_LENGTH_GRANULARITY; ++llx) {
+            //    C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
+            // TODO: boundary cases *sigh*
+            int supporting_entries =
+                    sum[this->x + this->length - 1][this->y + this->width - 1]
+                    - sum[this->x + this->length - 1][this->y - 1]
+                    - sum[this->x - 1][this->y + this->width - 1]
+                    + sum[this->x - 1][this->y - 1];
+            // TODO: work from here
+        }
+    }
 
     // TODO: remove this stub
     this->stable_position = std::make_pair(5, 6);
@@ -61,6 +144,7 @@ bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width, do
 }
 
 std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
+    return std::make_tuple(1, 2, 6);
     if (!this->has_computed_stable_position) {
         throw std::runtime_error("Attempt to get stable position when "
                                  "it doesn't exist or hasn't been computed.");
@@ -70,9 +154,10 @@ std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
     }
 }
 
-bool MaximumEmptyCuboid::can_fit_item(int item_length, int item_width, double item_height) {
-    // TODO: implement
-    return false;
+bool MaximumEmptyCuboid::can_fit_item(int item_length, int item_width, int item_height) {
+    return this->length >= item_length &&
+        this->width >= item_width &&
+        this->height >= item_height;
 }
 
 BoxTetromino::BoxTetromino(double x, double y, double z,
@@ -81,7 +166,10 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     // TODO: initialize super fields based on this info
     this->x = 0;
     this->y = 0;
-    this->z = 0.0;
+    this->z = 0;
+    this->height = 10;
+    this->width = 10;
+    this->length = 10;
     // TODO: ...
 }
 
@@ -280,9 +368,9 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 
 template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
-        std::vector<Cuboid> cuboids, const PackingBox & pb) {
+        std::vector<Cuboid> cuboids, const int box_height) {
 
-    // TODO: move sort routuine out
+    // TODO: move sort routuine out, remove custom compare
     // sort the cuboids by z-value of top-face in ascending order
     std::sort(cuboids.begin(), cuboids.end(), [](
                       const Cuboid& cube1, const Cuboid& cube2) {
@@ -291,7 +379,10 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
     // in the first iteration of the below loop, we consider the top-face
     // of the highest item, so we don't want to add any occupying items.
     // Therefore, we add a stub empty Cuboid item.
-    cuboids.push_back({0, 0, 0, 0, 0, -1});
+    Cuboid temp = {0, 0, 0, 0, 0, 0};
+    cuboids.push_back(temp);
+
+    printf("%d %d %d %d %d %d\n", cuboids[0].x, cuboids[0].y, cuboids[0].z, cuboids[0].length, cuboids[0].width, cuboids[0].height);
 
     // keeps track of the XY co-ordinates we can't consider empty at some height level
     bool occupied_space[array_length][array_width];
@@ -329,7 +420,7 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         }
 
         for (auto & mer : mers) {
-            candidates.emplace_back(mer, base_height, pb.height - base_height);
+            candidates.emplace_back(mer, base_height, box_height - base_height);
         }
     }
 
@@ -338,21 +429,38 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 
 /** ------------------------------ phase 2 ---------------------------------*/
 
-std::tuple<double, double, double> pick_best_candidate(
+/**
+ * TODO: docs
+ *
+ * cuboids must be sorted in non-decreasing order by (z+height)!
+ *
+ * @param length
+ * @param width
+ * @param height
+ * @param candidates
+ * @param cuboids
+ * @return
+ */
+std::tuple<int, int, int> pick_best_candidate(
                           int length, int width, int height,
-                          std::vector<MaximumEmptyCuboid> candidates) {
+                          std::vector<MaximumEmptyCuboid> & candidates,
+                          const std::vector<Cuboid> & cuboids) {
 
     // sort the candidates first because filtering is more expensive
     std::sort(candidates.begin(), candidates.end());
     // TODO: copy of candidates sorted by z for has_stable_position?
 
     // find the first candidate that works
-    for (auto c = candidates.begin(); c != candidates.end(); c++) {
+    for (auto & candidate : candidates) {
+        if (candidate.can_fit_item(length, width, height) &&
+            candidate.has_stable_position(length, width, cuboids)) {
+            return candidate.get_stable_position();
+        }
         // TODO: check if item fits, class method
 
         // TODO: check if item has stable position, if so use it,
         //  cast things to doubles, and return
-        c->has_stable_position(length, width, height, candidates);
+//        c->has_stable_position(length, width, height, candidates);
     }
 
     // TODO: remove stub
@@ -372,7 +480,7 @@ std::tuple<double, double, double> pick_best_candidate(
 bool process_optimiser_main(const double * box_points,
                             const double * item_points,
                             const int item_points_size,
-                            const int * item_indices,
+                            const double * item_indices, // ?
                             const int item_indices_size,
                             double * tetromino_position) {
 
@@ -387,13 +495,11 @@ bool process_optimiser_main(const double * box_points,
     BoxTetromino bt_test(8, 4, 0, 10, 10, 20, test_pb);
     cuboids.push_back(bt_test);
 
-    debug("Got here");
-
     // find all candidates
-    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, test_pb);
+    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, test_pb.height);
 
     // pick the best one
-    std::tuple<int, int, int> sol = pick_best_candidate(10, 5, 8, candidates);
+    std::tuple<int, int, int> sol = pick_best_candidate(10, 5, 7, candidates, cuboids);
 
     tetromino_position[0] = double(std::get<0>(sol));
     tetromino_position[1] = double(std::get<1>(sol));
@@ -402,6 +508,19 @@ bool process_optimiser_main(const double * box_points,
     return true;
 }
 
+#ifndef GET_FULL_PROCESS_OPTIMISER_HEADER
+int main() {
+    double box_points[] = {0,0,0,10,10,10};
+    double item_points[] = {10,10,0,20,20,10,30,30,30,40,40,40};
+    double item_indices[] = {1, 7};
+
+    double result[3];
+    process_optimiser_main(box_points, item_points, 12, item_indices, 2, result);
+    printf("%f %f %f\n", result[0], result[1], result[2]);
+}
+#endif
+
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 // for testing the code within the IDE
 int main() {
     double box_pos[3] = {0, 0, 0};
@@ -491,10 +610,11 @@ int main() {
     Cuboid cube2 = {10, 10, 50, 10, 10, 10};
     std::vector<Cuboid> cubes = {cube1, cube2};
 
-    std::vector<MaximumEmptyCuboid> results = find_all_maximum_empty_cuboids<100, 100>(cubes, test_pb);
+    std::vector<MaximumEmptyCuboid> results = find_all_maximum_empty_cuboids<100, 100>(cubes, test_pb.height);
     for (MaximumEmptyCuboid mec : results) {
         std::cout << mec << std::endl;
     }
 
     return 0;
 }
+#endif
