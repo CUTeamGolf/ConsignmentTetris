@@ -18,7 +18,22 @@ bool MaximumEmptyCuboid::operator < (const MaximumEmptyCuboid & other) const {
 
 MaximumEmptyCuboid::MaximumEmptyCuboid(
         const MaximumEmptyRectangle & mer, int z, int height) {
-    // TODO: ...
+    this->x = mer.llx;
+    this->y = mer.lly;
+    this->z = z;
+
+    this->length = mer.urx - mer.llx;
+    this->width  = mer.ury - mer.lly;
+    this->height = height;
+}
+
+std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
+//    os << "(" << mec.x << ", " << mec.y << ", " << mec.z
+//        << ") dim=[" << mec.length << ", " << mec.width
+//        << ", " << mec.height << "]";
+    os << mec.x << " " << mec.y << " " << mec.z << " "
+        << mec.length << " " << mec.width << " " << mec.height << ";";
+    return os;
 }
 
 bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width, double z,
@@ -75,9 +90,11 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
 template<size_t array_length, size_t array_width>
 void fill_occupied_space(bool occupied_space[array_length][array_width],
                          const Cuboid & c) {
-    // TODO: ...
-    occupied_space[0][0] = true;
-    occupied_space[4][3] = true;
+    for (int x = c.x; x < c.x + c.length; ++x) {
+        for (int y = c.y; y < c.y + c.width; ++y) {
+            occupied_space[x][y] = true;
+        }
+    }
 }
 
 /**
@@ -110,6 +127,12 @@ void update_cache(int cache[array_width + 1], int x,
     }
 }
 
+/**
+ * TODO: explain why the rectangles found by find_all_MERs will only
+ *   be possible to expand in the -x direction and not any other directions.
+ * @param rectangles
+ * @return
+ */
 std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
         std::vector<MaximumEmptyRectangle> & rectangles) {
 
@@ -255,30 +278,58 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 
 /** ------------------------------ phase 1 ---------------------------------*/
 
+template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, const PackingBox & pb) {
 
-    // TODO: sort cuboids by z + h
+    // TODO: move sort routuine out
+    // sort the cuboids by z-value of top-face in ascending order
+    std::sort(cuboids.begin(), cuboids.end(), [](
+                      const Cuboid& cube1, const Cuboid& cube2) {
+        return cube1.z + cube1.height < cube2.z + cube2.height;
+    });
+    // in the first iteration of the below loop, we consider the top-face
+    // of the highest item, so we don't want to add any occupying items.
+    // Therefore, we add a stub empty Cuboid item.
+    cuboids.push_back({0, 0, 0, 0, 0, -1});
 
-    bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY];
+    // keeps track of the XY co-ordinates we can't consider empty at some height level
+    bool occupied_space[array_length][array_width];
+    for (auto & x : occupied_space) {
+        for (bool & y : x) {
+            y = false;
+        }
+    }
+
+    // this is where we store the results
     std::vector<MaximumEmptyCuboid> candidates;
 
-    // TODO: add initial iteration with no obstacles
-    // TODO: make sure correct height looked at, not height of *c
+    // TODO: explain base height going down....
+    for (int i = cuboids.size() - 1; i >= 0; i--) {
+        // this place is not empty anymore when we lower out height
+        fill_occupied_space<array_length,
+            array_width>(occupied_space, cuboids[i]);
+        // if the next item has a top-face at the same height,
+        // we use the solutions found after removing that item instead
+        // because the ones we would find after this item would be redundant
+        if (i > 0 && cuboids[i - 1].z + cuboids[i - 1].height ==
+            cuboids[i].z + cuboids[i].height) {
+            continue;
+        }
 
-    for (auto c = cuboids.rbegin(); c != cuboids.rend(); c++) {
-        fill_occupied_space<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(occupied_space, *c);
-        // TODO: check for slight delta_h since last iter, and continue; if so
-
+        // solve the 2D problem
         std::vector<MaximumEmptyRectangle> mers =
-            find_all_maximum_empty_rectangles<MER_LENGTH_GRANULARITY,
-                MER_WIDTH_GRANULARITY>(occupied_space);
+            find_all_maximum_empty_rectangles<array_length, array_width>(occupied_space);
 
-        // TODO: loop through mers and add results to candidates
+        // the base height of the maximum empty cuboid is the
+        // height of the top face of the item just below
+        int base_height = 0;
+        if (i > 0) {
+            base_height = cuboids[i - 1].z + cuboids[i - 1].height;
+        }
+
         for (auto & mer : mers) {
-            // TODO: explain
-            candidates.emplace_back(mer, c->z + c->height,
-                                    pb.height - c->z - c->height);
+            candidates.emplace_back(mer, base_height, pb.height - base_height);
         }
     }
 
@@ -292,7 +343,7 @@ std::tuple<double, double, double> pick_best_candidate(
                           std::vector<MaximumEmptyCuboid> candidates) {
 
     // sort the candidates first because filtering is more expensive
-    sort(candidates.begin(), candidates.end());
+    std::sort(candidates.begin(), candidates.end());
     // TODO: copy of candidates sorted by z for has_stable_position?
 
     // find the first candidate that works
@@ -339,7 +390,7 @@ bool process_optimiser_main(const double * box_points,
     debug("Got here");
 
     // find all candidates
-    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids(cuboids, test_pb);
+    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, test_pb);
 
     // pick the best one
     std::tuple<int, int, int> sol = pick_best_candidate(10, 5, 8, candidates);
@@ -400,9 +451,50 @@ int main() {
             {1, 0, 0, 1},
             {0, 0, 0, 0}
     };
-    std::vector<MaximumEmptyRectangle> rects =
-            find_all_maximum_empty_rectangles<5, 5>(occupied2);
-    for (MaximumEmptyRectangle r : rects) {
-        printf("(%d, %d), (%d, %d)\n", r.llx, r.lly, r.urx, r.ury);
+
+
+    // 00000000000000
+    // 00110000000000
+    // 00110000000000
+    // 00110011111100
+    // 00000011111100
+    // 00000011111100
+    // 00000011111100
+    // 00000000000000
+    // 00000000000000
+    // 00000000000000
+    bool occupied4[14][10] = {
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,1,1,1,0},
+            {0,0,0,0,0,0,1,1,1,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,1,1,1,1,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0,0,0}
+    };
+
+//    std::vector<MaximumEmptyRectangle> rects =
+//            find_all_maximum_empty_rectangles<14, 10>(occupied4);
+//    for (MaximumEmptyRectangle r : rects) {
+//        printf("(%d, %d), (%d, %d)\n", r.llx, r.lly, r.urx, r.ury);
+//    }
+
+    PackingBox test_pb = {0, 0, 0, 100, 100, 100};
+    Cuboid cube1 = {50, 50, 0, 10, 10, 10};
+    Cuboid cube2 = {10, 10, 50, 10, 10, 10};
+    std::vector<Cuboid> cubes = {cube1, cube2};
+
+    std::vector<MaximumEmptyCuboid> results = find_all_maximum_empty_cuboids<100, 100>(cubes, test_pb);
+    for (MaximumEmptyCuboid mec : results) {
+        std::cout << mec << std::endl;
     }
+
+    return 0;
 }

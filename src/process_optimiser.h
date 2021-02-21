@@ -11,7 +11,7 @@
 #define STABILITY_LENGTH_GRANULARITY 100
 #define STABILITY_WIDTH_GRANULARITY 100
 
-//#define ENABLE_DEBUG
+#define ENABLE_DEBUG
 #ifdef ENABLE_DEBUG
     #define debug(msg) {std::cout << msg << std::endl;};
 #else
@@ -83,7 +83,7 @@ struct BoxTetromino : public Cuboid {
 struct MaximumEmptyRectangle {
     // lower left corner
     int llx, lly;
-    // upper right corner
+    // upper right corner (exclusive)
     int urx, ury;
 };
 
@@ -105,6 +105,8 @@ class MaximumEmptyCuboid {
 public:
     // construct from MER object
     MaximumEmptyCuboid(const MaximumEmptyRectangle &mer, int z, int height);
+
+    friend std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec);
 
     /**
      * Checks if this MEC has a stable position for an item with XY
