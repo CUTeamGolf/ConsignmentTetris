@@ -108,9 +108,9 @@ public:
     // construct from MER object
     MaximumEmptyCuboid(const MaximumEmptyRectangle &mer, int z, int height);
 
-#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+//#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
     friend std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec);
-#endif
+//#endif
 
     /**
      * Checks if this MEC has a stable position for an item with XY

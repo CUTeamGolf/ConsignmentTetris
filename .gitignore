@@ -36,6 +36,7 @@ octave-workspace
 
 # User-specific stuff
 .idea/**/workspace.xml
+src/.idea/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
@@ -58,7 +59,9 @@ octave-workspace
 .idea/**/libraries
 
 # CMake
-cmake-build-*/
+src/cmake-build-*/
+src/cmake-build-debug/
+src/cmake-build-debug/*
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml

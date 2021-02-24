@@ -44,7 +44,7 @@ MaximumEmptyCuboid::MaximumEmptyCuboid(
     this->height = height;
 }
 
-#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+//#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
 //    os << "(" << mec.x << ", " << mec.y << ", " << mec.z
 //        << ") dim=[" << mec.length << ", " << mec.width
@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
         << mec.length << " " << mec.width << " " << mec.height << ";";
     return os;
 }
-#endif
+//#endif
 
 // forward declare
 template <size_t array_length, size_t array_width>
@@ -72,7 +72,8 @@ bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width,
 
     // base case, box floor is supporting TODO: remove hack
     if (true || this->z == 0) {
-        this->stable_position = std::pair<int, int>(this->x, this->z);
+        this->has_computed_stable_position = true;
+        this->stable_position = std::pair<int, int>(this->x, this->y);
         return true;
     }
 
@@ -144,13 +145,12 @@ bool MaximumEmptyCuboid::has_stable_position(int item_length, int item_width,
 }
 
 std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
-    return std::make_tuple(1, 2, 6);
+//    return std::make_tuple(1, 2, 6);
     if (!this->has_computed_stable_position) {
         throw std::runtime_error("Attempt to get stable position when "
                                  "it doesn't exist or hasn't been computed.");
     } else {
-        return std::tuple<int, int, int>(this->stable_position.first,
-                                         this->stable_position.second, this->z);
+        return {this->stable_position.first, this->stable_position.second, this->z};
     }
 }
 
@@ -164,12 +164,12 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
                            double l, double w, double h, const PackingBox & pb) :
     real_x(x), real_y(y), real_z(z), real_length(l), real_width(w), real_height(h) {
     // TODO: initialize super fields based on this info
-    this->x = 0;
-    this->y = 0;
-    this->z = 0;
-    this->height = 10;
-    this->width = 10;
-    this->length = 10;
+    this->x = int(x);
+    this->y = int(y);
+    this->z = int(z);
+    this->height = int(h);
+    this->width = int(w);
+    this->length = int(l);
     // TODO: ...
 }
 
@@ -382,7 +382,7 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
     Cuboid temp = {0, 0, 0, 0, 0, 0};
     cuboids.push_back(temp);
 
-    printf("%d %d %d %d %d %d\n", cuboids[0].x, cuboids[0].y, cuboids[0].z, cuboids[0].length, cuboids[0].width, cuboids[0].height);
+//    printf("%d %d %d %d %d %d\n", cuboids[0].x, cuboids[0].y, cuboids[0].z, cuboids[0].length, cuboids[0].width, cuboids[0].height);
 
     // keeps track of the XY co-ordinates we can't consider empty at some height level
     bool occupied_space[array_length][array_width];
@@ -454,6 +454,7 @@ std::tuple<int, int, int> pick_best_candidate(
     for (auto & candidate : candidates) {
         if (candidate.can_fit_item(length, width, height) &&
             candidate.has_stable_position(length, width, cuboids)) {
+//            std::cout << candidate << std::endl;
             return candidate.get_stable_position();
         }
         // TODO: check if item fits, class method
@@ -485,21 +486,43 @@ bool process_optimiser_main(const double * box_points,
                             double * tetromino_position) {
 
     // TODO: construct box object
-    PackingBox test_pb = {0, 0, 0, 1000, 1000, 1000};
+    PackingBox test_pb = {0, 0, 0, 100, 100, 100};
 
     // TODO: construct cuboids from the given information
     // TODO: make method that does this using the point clouds given
 
     // TODO: remove stub
     std::vector<Cuboid> cuboids;
-    BoxTetromino bt_test(8, 4, 0, 10, 10, 20, test_pb);
-    cuboids.push_back(bt_test);
 
+    // test packing items
+    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
+    Cuboid c2 = {-1, -1, -1, 50, 50, 50};
+    Cuboid c3 = {-1, -1, -1, 30, 30, 30};
+    Cuboid c4 = {-1, -1, -1, 30, 30, 30};
+    Cuboid c5 = {-1, -1, -1, 40, 40, 40};
+    Cuboid c6 = {-1, -1, -1, 20, 20, 40};
+    Cuboid c7 = {-1, -1, -1, 40, 40, 60};
+    Cuboid c8 = {-1, -1, -1, 40, 60, 30};
+    Cuboid c9 = {-1, -1, -1, 10, 10, 10};
+    Cuboid c10 = {-1, -1, -1, 50, 50, 5};
+    std::vector<Cuboid> items = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10};
+//    BoxTetromino bt_test(1, 1, 1, 12, 12, 20, test_pb);
+//    cuboids.push_back(bt_test);
+
+    for (int i = 0; i < items.size(); ++i) {
+        std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<100, 100>(cuboids, 100);
+        std::tuple<int, int, int> sol = pick_best_candidate(items[i].length, items[i].width, items[i].height, candidates, cuboids);
+        items[i].x = std::get<0>(sol);
+        items[i].y = std::get<1>(sol);
+        items[i].z = std::get<2>(sol);
+        cuboids.push_back(items[i]);
+        printf("%d %d %d %d %d %d;\n", items[i].x, items[i].y, items[i].z, items[i].length, items[i].width, items[i].height);
+    }
     // find all candidates
     std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, test_pb.height);
 
     // pick the best one
-    std::tuple<int, int, int> sol = pick_best_candidate(10, 5, 7, candidates, cuboids);
+    std::tuple<int, int, int> sol = pick_best_candidate(20, 20, 20, candidates, cuboids);
 
     tetromino_position[0] = double(std::get<0>(sol));
     tetromino_position[1] = double(std::get<1>(sol));
@@ -618,3 +641,13 @@ int main() {
     return 0;
 }
 #endif
+
+// TODO: add method for finding (llx, lly) and (urx, ury) that are feasable to
+//   actually place the item in:
+//   * given candidates, to binary search to find the ones with z being just lower or
+//     equal to height of face of this one were we place it in this MEC
+//   * iterate these ones to find the above co-ords, use the one with lowest llx, lly
+//     and then use the urx, ury of this one regardless of the ur position (or else
+//     too complex *sigh*)
+//   * special case when actual item larger than the robot bounding box
+//   All this is passed to the stability checker which limits itself checking these spots
