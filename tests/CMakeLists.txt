@@ -12,7 +12,7 @@ add_executable(${TARGET_NAME}
   ${UNIT_TEST_SOURCE_LIST})
 
 target_link_libraries(${TARGET_NAME}
-  PUBLIC string_utils)
+  PUBLIC process_optimiser)
 
 target_include_directories(${TARGET_NAME}
   PUBLIC ../externals/catch2/
