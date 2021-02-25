@@ -15,7 +15,8 @@ target_link_libraries(${TARGET_NAME}
   PUBLIC string_utils)
 
 target_include_directories(${TARGET_NAME}
-  PUBLIC ../externals/catch2/)
+  PUBLIC ../externals/catch2/
+  PUBLIC ../src/)
 
 add_test(
   NAME ${TARGET_NAME}
