@@ -10,12 +10,6 @@ pipeline {
 				runMATLABCommand "version"
 			}
 		} 
-  
-		stage('Test Matlab') {
-			steps {
-				runMATLABTests(selectByFolder: ["tests"], sourceFolder: ["src"], codeCoverageCobertura: 'artifacts/cobertura.xml', modelCoverageCobertura: 'artifacts/model-cobertura.xml', testResultsJUnit: 'artifacts/junittestresults.xml', testResultsPDF: 'artifacts/test-results.pdf', testResultsSimulinkTest: 'artifacts/simulinktestresults.mldatx', testResultsTAP: 'artifacts/taptestresults.tap')
-			}
-		}
 		
 		stage('Build C++') {
 			steps {
@@ -27,6 +21,12 @@ pipeline {
 			steps {
                 ctest 'InSearchPath'
             }
+		}
+  
+		stage('Test Matlab') {
+			steps {
+				runMATLABTests(selectByFolder: ["tests"], sourceFolder: ["src"], codeCoverageCobertura: 'artifacts/cobertura.xml', modelCoverageCobertura: 'artifacts/model-cobertura.xml', testResultsJUnit: 'artifacts/junittestresults.xml', testResultsPDF: 'artifacts/test-results.pdf', testResultsSimulinkTest: 'artifacts/simulinktestresults.mldatx', testResultsTAP: 'artifacts/taptestresults.tap')
+			}
 		}
 	}
   
