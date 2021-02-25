@@ -10,12 +10,19 @@
 #define MER_HEIGHT_GRANULARITY 1000
 #define STABILITY_LENGTH_GRANULARITY 100
 #define STABILITY_WIDTH_GRANULARITY 100
-
-#define ENABLE_DEBUG
+// downscale for making stability check and feasible
+// position check more efficient
+#define PLACEMENT_POSITION_DOWNSCALE 4
+// size of bounding box for the manipulator
+#define ROBOT_ARM_LENGTH 30
+#define ROBOT_ARM_WIDTH 30
+#define ENABLE_DEBUGA
 #ifdef ENABLE_DEBUG
-    #define debug(msg) {std::cout << msg << std::endl;};
+    #define debug(msg) {std::cout << (msg) << std::endl;};
+    #define debug2(msg) {std::cout << (msg);};
 #else
     #define debug(msg) {};
+    #define debug2(msg) {};
 #endif
 
 /**** #define GET_FULL_PROCESS_OPTIMISER_HEADER ****/
@@ -52,6 +59,11 @@ struct Cuboid {
     int x, y, z;
     int length, width, height;
 
+    /**
+     * Custom comparison for cuboids
+     * @param other the cube to sort against
+     * @return true if this cube has a top-face lower than the other cube.
+     */
     bool operator<(const Cuboid& other) const;
 };
 
@@ -97,14 +109,10 @@ struct MaximumEmptyRectangle {
  *      corner of the rectangle at the floor of the MEC where the last
  *      item to be passed to @method can_fit_item was found to fit.
  */
-class MaximumEmptyCuboid {
+struct MaximumEmptyCuboid {
     int x, y, z;
     int length, width, height;
 
-    bool has_computed_stable_position;
-    std::pair<int, int> stable_position;
-
-public:
     // construct from MER object
     MaximumEmptyCuboid(const MaximumEmptyRectangle &mer, int z, int height);
 
@@ -124,14 +132,25 @@ public:
      * @param candidates -- TODO: explain
      * @return whether the item has a stable position in this MEC or not.
      */
-    bool has_stable_position(int item_length, int item_width,
-                             const std::vector<Cuboid> &cuboids);
+//    template <size_t array_length, size_t array_width>
+//    void compute_stable_positions(int item_length, int item_width, bool stable_positions[array_length][array_width],
+//                                                      const std::vector<Cuboid> &cuboids, int downscale_multiplier);
 
-    /**
-     * TODO: explain
-     * @return
-     */
-    std::tuple<int, int, int> get_stable_position();
+    // TODO: rename
+    static auto get_comp() {
+        return [](const MaximumEmptyCuboid& cube1, const MaximumEmptyCuboid& cube2) {
+            return cube1.z < cube2.z;
+        };
+    }
+
+//    template <size_t array_length, size_t array_width>
+//    void compute_reachable_positions(int item_length, int item_width, int item_height, bool feasible_pos[array_length][array_width],
+//                                     std::vector<MaximumEmptyCuboid>& mecs, int downscale_multiplier);
+//    /**
+//     * TODO: explain
+//     * @return
+//     */
+//    std::tuple<int, int, int> get_stable_position();
 
     // TODO: docs
     bool can_fit_item(int item_length, int item_width, int item_height);
@@ -140,6 +159,27 @@ public:
     //    described in pseudo-code
     bool operator < (const MaximumEmptyCuboid & other) const;
 };
+
+/**
+ * manipulator_height is the z-value the manipulator needs to reach to place the item,
+ *   so it's the sum of the empty space's z value and the item's height.
+ */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+template <size_t array_length, size_t array_width>
+void compute_reachable_positions(int item_length, int item_width, int manipulator_height,
+                                                     bool feasible_pos[array_length][array_width],
+                                                     std::vector<MaximumEmptyCuboid>& empty_spaces,
+                                                     int downscale_multiplier);
+#endif
+
+/**
+ * base_height is the height at which the base of the item will be placed i.e. the supporting ground height
+ */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+template <size_t array_length, size_t array_width>
+void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
+                                                  const std::vector<Cuboid> &cuboids, int downscale_multiplier);
+#endif
 
 /**
  * Fills the boolean matrix with 1s at locations [c.x:c.x+l, c.y:c.y+w]
@@ -191,7 +231,7 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
  * Given a list of candidates, picks a position from the best
  * one that works, where "works" is defined as:
  *   (i) the item fits in the EMC without clipping through it
- *   (ii) the item is stable (@see has_stable_position)
+ *   (ii) the item is stable (@see compute_stable_positions)
  *   (iii) the EMC extends all the way to the top of the packing box
  * and "best" is defined as:
  *   TODO: explain
