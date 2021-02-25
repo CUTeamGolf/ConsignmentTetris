@@ -682,7 +682,7 @@ bool process_optimiser_main(const double * box_points,
     return true;
 }
 
-#ifndef GET_FULL_PROCESS_OPTIMISER_HEADER
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 int main() {
     double box_points[] = {0,0,0,10,10,10};
     double item_points[] = {10,10,0,20,20,10,30,30,30,40,40,40};
@@ -797,25 +797,27 @@ int main() {
             {0,0,0,0,0,0,0,0,0,0}
     };
 
-//    std::vector<MaximumEmptyRectangle> rects =
-//            find_all_maximum_empty_rectangles<14, 10>(occupied4);
-//    for (MaximumEmptyRectangle r : rects) {
-//        printf("(%d, %d), (%d, %d)\n", r.llx, r.lly, r.urx, r.ury);
-//    }
-
-    PackingBox test_pb = {0, 0, 0, 100, 100, 100};
-    Cuboid cube1 = {50, 50, 0, 10, 10, 10};
-    Cuboid cube2 = {10, 10, 50, 10, 10, 10};
-    std::vector<Cuboid> cubes = {cube1, cube2};
-
-    std::vector<MaximumEmptyCuboid> results = find_all_maximum_empty_cuboids<100, 100>(cubes, test_pb.height);
-    for (MaximumEmptyCuboid mec : results) {
-        std::cout << mec << std::endl;
+    std::vector<MaximumEmptyRectangle> rects =
+            find_all_maximum_empty_rectangles<14, 10>(occupied4);
+    for (MaximumEmptyRectangle r : rects) {
+        printf("(%d, %d), (%d, %d)\n", r.llx, r.lly, r.urx, r.ury);
     }
+
+//    PackingBox test_pb = {0, 0, 0, 100, 100, 100};
+//    Cuboid cube1 = {50, 50, 0, 10, 10, 10};
+//    Cuboid cube2 = {10, 10, 50, 10, 10, 10};
+//    std::vector<Cuboid> cubes = {cube1, cube2};
+//
+//    std::vector<MaximumEmptyCuboid> results = find_all_maximum_empty_cuboids<100, 100>(cubes, test_pb.height);
+//    for (MaximumEmptyCuboid mec : results) {
+//        std::cout << mec << std::endl;
+//    }
 
     return 0;
 }
+
 #endif
+
 
 // TODO: add method for finding (llx, lly) and (urx, ury) that are feasable to
 //   actually place the item in:
@@ -826,3 +828,10 @@ int main() {
 //     too complex *sigh*)
 //   * special case when actual item larger than the robot bounding box
 //   All this is passed to the stability checker which limits itself checking these spots
+
+
+
+//// Put hacks for template usage in unit tests here
+bool occupied[4][4];
+std::vector<MaximumEmptyRectangle> temp = find_all_maximum_empty_rectangles<4, 4>(occupied);
+// ...

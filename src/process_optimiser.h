@@ -208,10 +208,11 @@ void fill_occupied_space(bool occupied_space[array_length][array_width],
  * @param occupied_space -- a boolean matrix
  * @return
  */
-#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+//#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
-        bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY]);
-#endif
+        bool occupied_space[array_length][array_width]);
+//#endif
 
 /**
  * Finds all the MECs in the box based on the cuboids already there.
