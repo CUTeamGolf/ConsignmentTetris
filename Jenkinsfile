@@ -12,12 +12,14 @@ pipeline {
 		} 
 		
 		stage('Build C++') {
+			agent { dockerfile true }
 			steps {
                 cmakeBuild buildDir: 'build', buildType: 'Debug', cleanBuild: true, installation: 'InSearchPath', steps: [[args: '--target install', withCmake: true]]
             }
 		}
 		
 		stage('Test C++') {
+			agent { dockerfile true }
 			steps {
                 ctest 'InSearchPath'
             }
