@@ -35,6 +35,7 @@ pipeline {
 	post {
 		always {
 			archiveArtifacts artifacts: 'artifacts/*', fingerprint: true
+			archiveArtifacts artifacts: 'tests/report.xml', fingerprint: true
 			cobertura coberturaReportFile: 'artifacts/cobertura.xml'
 			junit 'artifacts/junittestresults.xml'
 			junit 'tests/report.xml'
