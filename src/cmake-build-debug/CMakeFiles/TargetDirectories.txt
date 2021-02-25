@@ -1,3 +1,0 @@
-/home/marcus/GitHub/ConsignmentTetris/src/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/marcus/GitHub/ConsignmentTetris/src/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/marcus/GitHub/ConsignmentTetris/src/cmake-build-debug/CMakeFiles/src.dir
