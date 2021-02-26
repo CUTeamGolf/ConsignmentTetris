@@ -609,6 +609,8 @@ std::tuple<int, int, int> pick_best_candidate(
 //        c->compute_stable_positions(length, width, height, candidates);
     }
 
+    return {-1, -1, -1};
+
     // TODO: remove stub
 //    if (!candidates.empty())
 //        return candidates[0].get_stable_position();
