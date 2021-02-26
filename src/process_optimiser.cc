@@ -5,6 +5,10 @@
 #include <cmath>
 #include <utility>
 #include "process_optimiser.h"
+#include <string>
+#if __has_include(<simstruc.h>)
+# include <simstruc.h>
+#endif
 #define NDEBUG
 #include <cassert>
 
@@ -647,14 +651,15 @@ bool process_optimiser_main(const double * box_points,
 
     // iterate the items in the box
     for (int i = 0; i < item_indices_size; ++i) {
-        int item_id = item_indices[i];
+        int item_id = floor(item_indices[i] + 0.5);
         int next_item_id;
         // we are at last item, so set bound to number of points
         if (i == item_indices_size - 1) {
             next_item_id = item_points_size;
         } else {
-            next_item_id = item_indices[i + 1];
+            next_item_id = floor(item_indices[i + 1] + 0.5);
         }
+//        ssPrintf("%d %f %d %d %d\n", item_id, item_indices[i + 1], int(item_indices[i + 1] + 0.5), next_item_id, item_points_size);
         // iterate the points while finding the lowest and highest of each co-ordinate
         double lx = 1000000, ly = 1000000, lz = 1000000, ux = -1000000, uy = -1000000, uz = -1000000;
         for (int j = item_id; j < next_item_id; j += 3) {
@@ -667,11 +672,17 @@ bool process_optimiser_main(const double * box_points,
             // z co-ordinate
             lz = std::min(lz, item_points[j + 2]);
             uz = std::max(uz, item_points[j + 2]);
+//            ssPrintf(std::to_string(item_points[j]).c_str());
+//            ssPrintf("is is");
         }
         // create the bounding box
         BoxTetromino bt(lx, ly, lz, ux - lx, uy - ly, uz - lz, pb);
         cuboids.push_back(bt);
     }
+
+    dPrintf("%d cuboids in box:\n", cuboids.size());
+    // TODO: add some debugging info here?
+
 
     // convert item to be packed to the virtual co-ordinate system
     Cuboid tetromino = BoxTetromino(pb.x, pb.y, pb.z,
