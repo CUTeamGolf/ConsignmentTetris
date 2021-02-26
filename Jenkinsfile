@@ -10,8 +10,15 @@ pipeline {
 				runMATLABCommand "version"
 			}
 		} 
+		
+		stage('Build C++') {
+			agent { dockerfile true }
+			steps {
+                cmakeBuild buildDir: 'build', buildType: 'Debug', cleanBuild: true, installation: 'InSearchPath', steps: [[withCmake: true]]
+            }
+		}
   
-		stage('Build & test') {
+		stage('Test Matlab') {
 			steps {
 				runMATLABTests(selectByFolder: ["tests"], sourceFolder: ["src"], codeCoverageCobertura: 'artifacts/cobertura.xml', modelCoverageCobertura: 'artifacts/model-cobertura.xml', testResultsJUnit: 'artifacts/junittestresults.xml', testResultsPDF: 'artifacts/test-results.pdf', testResultsSimulinkTest: 'artifacts/simulinktestresults.mldatx', testResultsTAP: 'artifacts/taptestresults.tap')
 			}
