@@ -1,32 +1,47 @@
 #ifndef PROCESS_OPTIMISER_HEADER
 #define PROCESS_OPTIMISER_HEADER
 
-#include <vector>
-#include <bitset>
-#include <iostream>
-
+/** Parameters for the algorithm */
+// precision/size of the virtual co-ordinate system
+// TODO: remove redundant parameters
+// TODO: refactor/rename the paraneters to be shorter
 #define MER_LENGTH_GRANULARITY 1000
 #define MER_WIDTH_GRANULARITY  1000
 #define MER_HEIGHT_GRANULARITY 1000
 #define STABILITY_LENGTH_GRANULARITY 100
 #define STABILITY_WIDTH_GRANULARITY 100
+// area of bounding box for the manipulator
+// in the virtual co-ordinate system
+#define ROBOT_ARM_LENGTH 30
+#define ROBOT_ARM_WIDTH 30
 
-#define ENABLE_DEBUG
+/** standard library features used in prototypes */
+#include <vector>
+#include <bitset>
+#include <iostream>
+
+/** debugging macros */
+//#define ENABLE_DEBUG
 #ifdef ENABLE_DEBUG
-    #define debug(msg) {std::cout << msg << std::endl;};
+    #define debug(msg) do {std::cout << (msg) << std::endl;} while (false)
+    #define debug2(msg) do {std::cout << (msg);} while (false)
 #else
     #define debug(msg) {};
+    #define debug2(msg) {};
 #endif
 
-/**** #define GET_FULL_PROCESS_OPTIMISER_HEADER ****/
+/** Matlab compiler workaround */
 // The matlab-C++ linker only supports a subset
 // of C++ and the standard library, so incompatible
 // function prototypes are masked unless this flag
 // is defined. Please define it before including this
 // header file if you want to access those functions
 // as well for e.g. unit testing.
-// TODO: figure out if the matlab compiler has any
-//    specific flags we can #ifndef on instead
+
+//#define GET_FULL_PROCESS_OPTIMISER_HEADER
+
+/** Data containers (structs and classes) */
+struct DUMMY_STRUCT_TO_SILENCE_ABOVE_COLORED_DOCUMENTATION {};
 
 /**
  * Represents the free space in the
@@ -34,6 +49,9 @@
  *
  * The dimensions should not include the
  * thickness of the walls and the floor.
+ *
+ * @field x,y,z the MATLAB co-ordinates of the bottom-lower-left corner of the box
+ * @field length,width,height the MATLAB dimensions of the box
  */
 struct PackingBox {
     double x, y, z;
@@ -42,33 +60,59 @@ struct PackingBox {
 
 /**
  * Represents an discretized bounding box around some object in
- * a virtual co-ordinate system.
+ * the virtual co-ordinate system.
  *
  * Both the x, y, and z co-ordinates are relative to the bottom-
  * -lower-left corner of the box. The top-upper-right corner
  * of the box has co-ordinates (MER_L_GRAN, MER_W_GRAN, MER_H_GRAN).
+ *
+ * @field x,y,z co-ordinates of the bottom-lower-left corner relative
+ * to the packing box in the virtual co-ordinate system
+ * @field length,width,height the dimensions of the cuboids
+ *
+ * @method compare less than
  */
 struct Cuboid {
     int x, y, z;
     int length, width, height;
 
+    /**
+     * Custom comparison for sorting cuboids by z+height
+     *
+     * @param other the cube to sort against
+     * @return true if this cube has a top-face lower than the other cube.
+     */
     bool operator<(const Cuboid& other) const;
 };
 
 /**
  * Represents a simscape multibody box.
  *
+ * @explanation
  * The x,y,z co-ordinates are those used in Simscape.
  * This includes the dimensions. When constructing
  * this object, this information, combined with
  * information about the box, is used to calculate
  * the co-orinates and dimensions in the virtual
  * co-ordinate system described above.
+ *
  */
 struct BoxTetromino : public Cuboid {
     double real_x, real_y, real_z;
     double real_length, real_width, real_height;
 
+    /**
+     * Initialised the fields and creates a discritised bounding box
+     * in the virtual co-ordinate system. The following criteria
+     * should be satisifed:
+     * @criteria x less than real_x - pb.x
+     * @criteria real_x + real_length - pb.x less than x + length
+     *
+     * @param x,y,z the matlab co-ordinates of the bottom-lower-left corner
+     * of the box.
+     * @param l,w,h the matlab dimensions of the box
+     * @param pb a  PackingBox struct
+     */
     BoxTetromino(double x, double y, double z,
                  double l, double w, double h,
                  const PackingBox & pb);
@@ -78,9 +122,13 @@ struct BoxTetromino : public Cuboid {
  * Represents a rectangle of 0s that can't be expanded
  * any further in a boolean matrix.
  *
- * The boolean matrix has dimensions
- *   MER_LENGTH_GRANULARITY x MER_WIDTH_GRANULARITY
- * This POD is mainly used by @code find_all_maximum_rectangles
+ * @field llx,lly the XY-coordinates of the lower-left corner
+ * of the rectangle (inclusive)
+ * @field urx,ury the XY-coordinates of the upper-right corner
+ * of the rectangle (exclusive)
+ *
+ * @see find_all_maximum_empty_rectangles
+ *
  */
 struct MaximumEmptyRectangle {
     // lower left corner
@@ -90,108 +138,146 @@ struct MaximumEmptyRectangle {
 };
 
 /**
- * Represents a MEC. TODO: docs
+ * Represents a Maximum Empty Cuboid (MEC) i.e. a cuboid in the virtual co-ordinate
+ * system that cannot be expanded by 1 in any of the 6 directions without
+ * intersecting with some other object in the scene.
  *
- * TODO: fields
- * @field stable_position contains the xy co-ordinates of the lower-left
- *      corner of the rectangle at the floor of the MEC where the last
- *      item to be passed to @method can_fit_item was found to fit.
+ * @field x,y,z the co-ordinates of the bottom-lower-left corner of the MEC
+ * @field length size in x-direction
+ * @field width size in y-direction
+ * @field height size in z=direction
  */
-class MaximumEmptyCuboid {
+struct MaximumEmptyCuboid {
     int x, y, z;
     int length, width, height;
 
-    bool has_computed_stable_position;
-    std::pair<int, int> stable_position;
-
-public:
-    // construct from MER object
+    /**
+     *
+     * @param mer A MaximumEmptyRectangle struct from which to get length, width, x, and y
+     * @param z the height of the lower-face
+     * @param height the height
+     */
     MaximumEmptyCuboid(const MaximumEmptyRectangle &mer, int z, int height);
 
-//#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
-    friend std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec);
-//#endif
+    /**
+     * Custom compare for bottom face height of the MEC
+     * @return a lambda that can be used to sort a list of MECs by their
+     * z-value in non-decreasing order
+     */
+//    static auto get_bottom_face_comp();
 
     /**
-     * Checks if this MEC has a stable position for an item with XY
-     * dimensions @param item_length and @param item_width. If so,
-     * the @field stable_position is updated and
-     * @method get_stable_position can be called to
-     * fetch this information.
+     * Custom comparison based on heuristics to decide which
+     * of two candidates is better.
      *
-     * TODO: elaborate on threshold and stuff
-     *
-     * @param candidates -- TODO: explain
-     * @return whether the item has a stable position in this MEC or not.
+     * A candidate is better if:
+     * - it has a lower z co-ordinate
+     * - none of the above, but it has a lower y co-ordinate
+     * - none of the above, but it has a lower x co-ordinate
+     * - none of the above but the volume is smaller
+     * @return a lambda that can be used to sort a list of MECs by the above criteria
      */
-    bool has_stable_position(int item_length, int item_width,
-                             const std::vector<Cuboid> &cuboids);
+//     static auto get_heuristic_comp();
 
     /**
-     * TODO: explain
-     * @return
+     * Checks if the MEC can fit some item in the virtual co-ordinate system
+     * @param item_length
+     * @param item_width
+     * @param item_height
+     * @return true if there is room for the item, false otherwise
      */
-    std::tuple<int, int, int> get_stable_position();
-
-    // TODO: docs
     bool can_fit_item(int item_length, int item_width, int item_height);
 
-    // TODO: docs, for sorting the candidates based on heuristic
-    //    described in pseudo-code
-    bool operator < (const MaximumEmptyCuboid & other) const;
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+    //// Used for exporting a string representation of the MEC that the cuboid_visualiser.m script supports
+    friend std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec);
+#endif
 };
 
-/**
- * Fills the boolean matrix with 1s at locations [c.x:c.x+l, c.y:c.y+w]
- * i.e. at the "shadows" of the item.
- *
- * @tparam array_length
- * @tparam array_width
- * @param occupied_space -- the boolean matrix
- * @param c
- */
+/* -------------------- General utility methods -------------------- */
+
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Fills the boolean matrix with 1s in the XY area of the Cuboid passed.
+ *
+ * @details
+ * After calling this function, the boolean matrix occupied_space should be
+ * true at locations [c.x:c.x+l, c.y:c.y+w] where the ends are exclusive.
+ *
+ * @tparam array_length the length of the array passed
+ * @tparam array_width the width of the array passed
+ * @param occupied_space a boolean matrix
+ * @param c a Cuboid in a virtual co-ordinate system of the same size as the template parameters
+ */
 template<size_t array_length, size_t array_width>
-void fill_occupied_space(bool occupied_space[array_length][array_width],
-                         const Cuboid & c);
+void fill_occupied_space(bool occupied_space[array_length][array_width], const Cuboid & c);
 #endif
 
-/**
- * Finds all the MERs of 0s in the passed boolean matrix. All these
- * rectangles should have the properties
- *  (i) all bools inside them are false
- *  (ii) no row above or column to the side should contain all 0s
- *
- *  Matlab does not allow returning custom types, so the result
- *  is stored in the result parameter passed as a reference.
- *
- * @param occupied_space -- a boolean matrix
- * @return
- */
+/* -------------------- phase 1 utility methods -------------------- */
+
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Finds all the MERs of 0s in the passed boolean matrix, having the
+ * following properties.
+ *
+ * @coordinate_system This method assumes a co-ordinate system where
+ * x,y ranges from 0,0 to array_length-1,array_width-1 (inclusive),
+ * respectively, and the entry at that coordiante is specified
+ * by occupied_space[x][y].
+ *
+ * @MaximumEmptyRectangle_properties the booleans at indices
+ * mer.llx &lt;= x &lt; mer.urx and mer.lly &lt;= y &lt; mer.ury
+ * should be false.
+ * @MaximumEmptyRectangle_properties extending the rectangle in
+ * any of the four directions should introduce at least one entry
+ * with a true in it, or cause the rectangle to go out of bounds.
+ *
+ * @param occupied_space is the boolean matrix
+ * @return a vector of MaximumEmptyRectangles that should
+ * all satisy the above * described properties.
+ */
+template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
-        bool occupied_space[MER_LENGTH_GRANULARITY][MER_WIDTH_GRANULARITY]);
+        bool occupied_space[array_length][array_width]);
 #endif
 
-/**
- * Finds all the MECs in the box based on the cuboids already there.
- *
- * TODO: elaborate
- *
- * @param cuboids
- * @return
- */
+/* -------------------- phase 1 driver function -------------------- */
 
+// TODO: more refactoring from here
+// TODO: check if pb should really have the doubles, or what else to change to prototype to
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, const PackingBox & pb);
 #endif
 
+/* -------------------- phase 2 utility methods -------------------- */
+/**
+ * manipulator_height is the z-value the manipulator needs to reach to place the item,
+ *   so it's the sum of the empty space's z value and the item's height.
+ */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+template <size_t array_length, size_t array_width>
+void compute_reachable_positions(int item_length, int item_width, int manipulator_height,
+                                 bool feasible_pos[array_length][array_width],
+                                 const std::vector<MaximumEmptyCuboid>& empty_spaces,
+                                 int downscale_multiplier);
+#endif
+
+/**
+ * base_height is the height at which the base of the item will be placed i.e. the supporting ground height
+ */
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+template <size_t array_length, size_t array_width>
+void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
+                              const std::vector<Cuboid> &cuboids, int downscale_multiplier);
+#endif
+/* -------------------- phase 2 driver function -------------------- */
+
 /**
  * Given a list of candidates, picks a position from the best
  * one that works, where "works" is defined as:
  *   (i) the item fits in the EMC without clipping through it
- *   (ii) the item is stable (@see has_stable_position)
+ *   (ii) the item is stable (@see compute_stable_positions)
  *   (iii) the EMC extends all the way to the top of the packing box
  * and "best" is defined as:
  *   TODO: explain
@@ -204,10 +290,15 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
  *   TODO: throw exception instead?
  */
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
-std::tuple<double, double, double> pick_best_candidate(
+template <size_t array_length, size_t array_width>
+std::tuple<int, int, int> pick_best_candidate(
         int length, int width, int height,
-        std::vector<MaximumEmptyCuboid> candidates);
+        std::vector<MaximumEmptyCuboid>& candidates,
+        std::vector<Cuboid>& cuboids);
 #endif
+
+
+/* -------------------- main driver function -------------------- */
 
 /**
  * TODO: docs
@@ -221,11 +312,13 @@ std::tuple<double, double, double> pick_best_candidate(
  */
 bool process_optimiser_main(const double * box_points,
                             const double * item_points,
-                            const int item_points_size,
+                            int item_points_size,
                             const double * item_indices,
-                            const int item_indices_size,
+                            int item_indices_size,
+                            double * tetromino_dimensions,
                             double * tetromino_position);
 
+/* ---------- Pseudo code for the algorithm as a whole ----------*/
 /**
  * A high-level description of the algorithm to implement
  *
@@ -313,4 +406,4 @@ bool process_optimiser_main(const double * box_points,
  *       C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
  */
 
-#endif
+#endif //#ifndef PROCESS_OPTIMISER_HEADER
