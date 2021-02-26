@@ -17,13 +17,6 @@ pipeline {
                 cmakeBuild buildDir: 'build', buildType: 'Debug', cleanBuild: true, installation: 'InSearchPath', steps: [[withCmake: true]]
             }
 		}
-		
-		stage('Test C++') {
-			agent { dockerfile true }
-			steps {
-                ctest 'InSearchPath'
-            }
-		}
   
 		stage('Test Matlab') {
 			steps {
@@ -35,10 +28,8 @@ pipeline {
 	post {
 		always {
 			archiveArtifacts artifacts: 'artifacts/*', fingerprint: true
-			archiveArtifacts artifacts: 'tests/report.xml', fingerprint: true
 			cobertura coberturaReportFile: 'artifacts/cobertura.xml'
 			junit 'artifacts/junittestresults.xml'
-			junit 'tests/report.xml'
 		}
 	}
 }
