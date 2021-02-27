@@ -702,6 +702,9 @@ bool process_optimiser_main(const double * box_points,
     }
 }
 
+#define MAIN 1
+
+#if (MAIN==1)
 int main() {
     double box_points[] = {-2, -2, -2, 8, 8, 8};
     double item_points[] = {-1, -1, 0, 2, 2, 2};
@@ -714,64 +717,47 @@ int main() {
     printf("%f %f %f\n", result[0], result[1], result[2]);
     return 0;
 }
+#endif
 
-//int main() {
-//    // TODO: construct box object
-//    PackingBox test_pb = {0, 0, 0, 40, 40, 100};
-//
-//    // TODO: construct cuboids from the given information
-//    // TODO: make method that does this using the point clouds given
-//
-//    // TODO: remove stub
-//    std::vector<Cuboid> cuboids;
-//
-//    // test packing items
-//    Cuboid c1 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c2 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c3 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c4 = {-1, -1, -1, 20, 20, 50};
-//    Cuboid c5 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c6 = {-1, -1, -1, 40, 40, 50};
-//    Cuboid c7 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c8 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c9 = {-1, -1, -1, 10, 10, 50};
-//    Cuboid c10 = {-1, -1, -1, 10, 10, 10};
-//
-////    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
-////    Cuboid c2 = {-1, -1, -1, 50, 50, 50};
-////    Cuboid c3 = {-1, -1, -1, 30, 30, 30};
-////    Cuboid c4 = {-1, -1, -1, 30, 30, 30};
-////    Cuboid c5 = {-1, -1, -1, 40, 40, 40};
-////    Cuboid c6 = {-1, -1, -1, 20, 20, 40};
-////    Cuboid c7 = {-1, -1, -1, 40, 40, 60};
-////    Cuboid c8 = {-1, -1, -1, 40, 60, 30};
-////    Cuboid c9 = {-1, -1, -1, 10, 10, 10};
-////    Cuboid c10 = {-1, -1, -1, 50, 50, 5};
-//    std::vector<Cuboid> items = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10};
-////    BoxTetromino bt_test(1, 1, 1, 12, 12, 20, test_pb);
-////    cuboids.push_back(bt_test);
-//
-//    for (int i = 0; i < items.size(); ++i) {
-//        std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<100, 100>(cuboids, 100);
-//        std::tuple<int, int, int> sol = pick_best_candidate<100, 100>(items[i].length, items[i].width, items[i].height, candidates, cuboids);
-//        items[i].x = std::get<0>(sol);
-//        items[i].y = std::get<1>(sol);
-//        items[i].z = std::get<2>(sol);
-//        cuboids.push_back(items[i]);
-//        printf("%d %d %d %d %d %d;\n", items[i].x, items[i].y, items[i].z, items[i].length, items[i].width, items[i].height);
-//    }
-//    // find all candidates
-////    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, test_pb.height);
-//
-//    // pick the best one
-////    std::tuple<int, int, int> sol = pick_best_candidate<40, 40>(20, 20, 20, candidates, cuboids);
-//
-////    tetromino_position[0] = double(std::get<0>(sol));
-////    tetromino_position[1] = double(std::get<1>(sol));
-////    tetromino_position[2] = double(std::get<2>(sol));
-//
-//    return true;
-//}
+#if (MAIN==2)
+int main() {
+    std::vector<Cuboid> cuboids;
+
+    // test packing items
+    Cuboid c1 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c2 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c3 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c4 = {-1, -1, -1, 20, 20, 50};
+    Cuboid c5 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c6 = {-1, -1, -1, 40, 40, 50};
+    Cuboid c7 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c8 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c9 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c10 = {-1, -1, -1, 10, 10, 10};
+
+//    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
+//    Cuboid c2 = {-1, -1, -1, 50, 50, 50};
+//    Cuboid c3 = {-1, -1, -1, 30, 30, 30};
+//    Cuboid c4 = {-1, -1, -1, 30, 30, 30};
+//    Cuboid c5 = {-1, -1, -1, 40, 40, 40};
+//    Cuboid c6 = {-1, -1, -1, 20, 20, 40};
+//    Cuboid c7 = {-1, -1, -1, 40, 40, 60};
+//    Cuboid c8 = {-1, -1, -1, 40, 60, 30};
+//    Cuboid c9 = {-1, -1, -1, 10, 10, 10};
+//    Cuboid c10 = {-1, -1, -1, 50, 50, 5};
+    std::vector<Cuboid> items = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10};
+
+    for (int i = 0; i < items.size(); ++i) {
+        std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<100, 100>(cuboids, 100);
+        std::tuple<int, int, int> sol = pick_best_candidate<100, 100>(items[i].length, items[i].width, items[i].height, candidates, cuboids);
+        items[i].x = std::get<0>(sol);
+        items[i].y = std::get<1>(sol);
+        items[i].z = std::get<2>(sol);
+        cuboids.push_back(items[i]);
+        printf("%d %d %d %d %d %d;\n", items[i].x, items[i].y, items[i].z, items[i].length, items[i].width, items[i].height);
+    }
+}
+#endif
 
 //#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 //int main() {

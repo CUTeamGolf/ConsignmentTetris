@@ -10,7 +10,7 @@
 #define ROBOT_ARM_LENGTH 50
 #define ROBOT_ARM_WIDTH 50
 // controls amount of debugging info (0 disables debugging)
-#define DEBUG_VERBOSITY 3
+#define DEBUG_VERBOSITY 0
 
 // IGNORE THESE
 #define STABILITY_LENGTH_GRANULARITY 100
