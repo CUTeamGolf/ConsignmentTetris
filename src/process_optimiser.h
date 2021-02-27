@@ -30,6 +30,13 @@
     #define debug2(msg) {};
 #endif
 
+// debug print to simulink diagnostics
+#ifdef SS_STDIO_AVAILABLE
+#define dPrintf(str, args) do { ssPrintf(str, args); } while (0)
+#else
+#define dPrintf(str, args) do { printf(str, args); } while (0)
+#endif
+
 /** Matlab compiler workaround */
 // The matlab-C++ linker only supports a subset
 // of C++ and the standard library, so incompatible
