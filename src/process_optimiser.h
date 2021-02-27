@@ -1,40 +1,35 @@
 #ifndef PROCESS_OPTIMISER_HEADER
 #define PROCESS_OPTIMISER_HEADER
 
-/** Parameters for the algorithm */
-// precision/size of the virtual co-ordinate system
-// TODO: remove redundant parameters
-// TODO: refactor/rename the paraneters to be shorter
+/** TUNABLE PARAMETERS */
+// the dimensions of the virtual co-ordinate system (accuracy-efficiency tradeoff)
 #define MER_LENGTH_GRANULARITY 1000
 #define MER_WIDTH_GRANULARITY  1000
 #define MER_HEIGHT_GRANULARITY 1000
+// XY area of the bounding box for the manipulator in the virtual co-ordinate system
+#define ROBOT_ARM_LENGTH 50
+#define ROBOT_ARM_WIDTH 50
+// controls amount of debugging info (0 disables debugging)
+#define DEBUG_VERBOSITY 3
+
+// IGNORE THESE
 #define STABILITY_LENGTH_GRANULARITY 100
 #define STABILITY_WIDTH_GRANULARITY 100
-// area of bounding box for the manipulator
-// in the virtual co-ordinate system
-#define ROBOT_ARM_LENGTH 30
-#define ROBOT_ARM_WIDTH 30
-
-/** standard library features used in prototypes */
-#include <vector>
-#include <bitset>
-#include <iostream>
 
 /** debugging macros */
-//#define ENABLE_DEBUG
-#ifdef ENABLE_DEBUG
-    #define debug(msg) do {std::cout << (msg) << std::endl;} while (false)
-    #define debug2(msg) do {std::cout << (msg);} while (false)
+// basic print statements
+#ifdef SS_STDIO_AVAILABLE
+// debug print to simulink diagnostics window
+# define dPrintf(verb, str, args) do { if (DEBUG_VERBOSITY >= verb) ssPrintf(str, args); } while (0)
 #else
-    #define debug(msg) {};
-    #define debug2(msg) {};
+# define dPrintf(verb, str, ...) do { if (DEBUG_VERBOSITY >= (verb)) printf(str, ##__VA_ARGS__); } while (0)
 #endif
 
-// debug print to simulink diagnostics
+// assertions
 #ifdef SS_STDIO_AVAILABLE
-#define dPrintf(str, args) do { ssPrintf(str, args); } while (0)
+# define dAssert(statement, msg) do { if (!(statement)) ssPrintf("ASSERTION FAILED: " msg "\n"); } while (0)
 #else
-#define dPrintf(str, args) do { printf(str, args); } while (0)
+# define dAssert(statement, msg) do { assert((statement) && (msg)); } while (0)
 #endif
 
 /** Matlab compiler workaround */
@@ -46,6 +41,11 @@
 // as well for e.g. unit testing.
 
 //#define GET_FULL_PROCESS_OPTIMISER_HEADER
+
+/** standard library features used in prototypes */
+#include <vector>
+#include <bitset>
+#include <iostream>
 
 /** Data containers (structs and classes) */
 struct DUMMY_STRUCT_TO_SILENCE_ABOVE_COLORED_DOCUMENTATION {};
@@ -223,6 +223,19 @@ void fill_occupied_space(bool occupied_space[array_length][array_width], const C
 /* -------------------- phase 1 utility methods -------------------- */
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+// TODO: docs
+template <size_t array_length, size_t array_width>
+void update_cache(int cache[array_width + 1], int x,
+                  bool occupied_space[array_length][array_width]);
+#endif
+
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+// TODO: docs
+std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
+        std::vector<MaximumEmptyRectangle> & rectangles);
+#endif
+
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 /**
  * Finds all the MERs of 0s in the passed boolean matrix, having the
  * following properties.
@@ -250,11 +263,9 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 
 /* -------------------- phase 1 driver function -------------------- */
 
-// TODO: more refactoring from here
-// TODO: check if pb should really have the doubles, or what else to change to prototype to
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
-        std::vector<Cuboid> cuboids, const PackingBox & pb);
+        std::vector<Cuboid> cuboids, int box_height);
 #endif
 
 /* -------------------- phase 2 utility methods -------------------- */
@@ -266,8 +277,7 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 template <size_t array_length, size_t array_width>
 void compute_reachable_positions(int item_length, int item_width, int manipulator_height,
                                  bool feasible_pos[array_length][array_width],
-                                 const std::vector<MaximumEmptyCuboid>& empty_spaces,
-                                 int downscale_multiplier);
+                                 const std::vector<MaximumEmptyCuboid>& empty_spaces);
 #endif
 
 /**
@@ -276,7 +286,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 template <size_t array_length, size_t array_width>
 void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
-                              const std::vector<Cuboid> &cuboids, int downscale_multiplier);
+                              const std::vector<Cuboid> &cuboids);
 #endif
 /* -------------------- phase 2 driver function -------------------- */
 
