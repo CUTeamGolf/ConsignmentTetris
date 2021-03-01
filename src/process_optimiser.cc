@@ -714,7 +714,6 @@ bool process_optimiser_main(const double * box_points,
 
     dPrintf(2, "process_optimiser_main: Running phase 1 of the algorithm...\n");
 
-    return true;
     // run phase 1 of the algorithm
     std::vector<MaximumEmptyCuboid> candidates =
             find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, MER_HEIGHT_GRANULARITY);
