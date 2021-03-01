@@ -7,14 +7,12 @@
 #define MER_WIDTH_GRANULARITY  1000
 #define MER_HEIGHT_GRANULARITY 1000
 // XY area of the bounding box for the manipulator in the virtual co-ordinate system
-#define ROBOT_ARM_LENGTH 50
-#define ROBOT_ARM_WIDTH 50
+#define ROBOT_ARM_LENGTH 30
+#define ROBOT_ARM_WIDTH 30
+// the fraction of ground support needed to deem a placement "stable"
+#define STABILITY_SUPPORT_FRACTION 0.6
 // controls amount of debugging info (0 disables debugging)
 #define DEBUG_VERBOSITY 0
-
-// IGNORE THESE
-#define STABILITY_LENGTH_GRANULARITY 100
-#define STABILITY_WIDTH_GRANULARITY 100
 
 /** debugging macros */
 // basic print statements

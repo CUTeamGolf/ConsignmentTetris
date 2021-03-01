@@ -446,28 +446,30 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
  * @return
  */
 template <size_t array_length, size_t array_width>
-void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
-                                                  const std::vector<Cuboid> &cuboids) {
+void compute_stable_positions(int item_length, int item_width, int base_height,
+                              bool stable_positions[array_length][array_width],
+                              const std::vector<Cuboid> &cuboids) {
 
-    // TODO: remove stub
-    for (int x = 0; x < array_length; ++x) {
-        for (int y = 0; y < array_width; ++y) {
-            stable_positions[x][y] = true;
+    // base case for the box floor
+    if (base_height == 0) {
+        for (int x = 0; x < array_length; ++x) {
+            for (int y = 0; y < array_width; ++y) {
+                stable_positions[x][y] = true;
+            }
         }
+        return;
     }
-    return;
 
-    // base case, box floor is supporting TODO: remove hack
-//    if (true || this->z == 0) {
-//        this->has_computed_stable_position = true;
-//        this->stable_position = std::pair<int, int>(this->x, this->y);
-//        return true;
-//    }
+    // assert cuboids sorted by z + height in ascending order
+    for (int i = 0; i < cuboids.size(); ++i) {
+        dAssert(i == 0 || !(cuboids[i].z + cuboids[i].height < cuboids[i - 1].z + cuboids[i - 1].height),
+                "compute_stable_positions: The cuboids passed are sorted in ascending order by top-face");
+    }
 
     // TODO: this parameter has to be the same as the other one!
 
-    // initialise 2d array to all false
-    bool ground[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+    // assume no stable ground at all
+    bool ground[array_length][array_width];
     for (auto & x : ground) {
         for (bool & y : x) {
             y = false;
@@ -479,17 +481,25 @@ void compute_stable_positions(int item_length, int item_width, int base_height, 
     Cuboid temp = {0, 0, base_height, 0, 0, 0};
     auto supportingCuboid = std::lower_bound(cuboids.begin(), cuboids.end(), temp);
 
+    dAssert(supportingCuboid != cuboids.end(),
+            "one or more supporting cuboids were found.");
+    dAssert(supportingCuboid->z + supportingCuboid->height == base_height,
+            "the supporting cuboid has a top-face equal to the base height");
+
     // iterate all the supporting cuboids, and note their supporting area
     while (supportingCuboid != cuboids.end() && supportingCuboid->z + supportingCuboid->height == base_height) {
         // fill_occupied_space
-        fill_occupied_space<STABILITY_LENGTH_GRANULARITY, STABILITY_WIDTH_GRANULARITY>(ground, *supportingCuboid);
+        fill_occupied_space<array_length, array_width>(ground, *supportingCuboid);
+        supportingCuboid++;
     }
 
+    dPrintf(4, "compute_stable_positions: the supporting ground at height z=%d:\n", base_height);
+    dPrint_array<array_length, array_width>(4, ground);
+
     // sum[x][y] gives the number of 1's in the area ground[0..x][0..y] (inclusive end)
-    int sum[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
-    // TODO: precompute sums of 1s in C
-    for (int x = 0; x < STABILITY_LENGTH_GRANULARITY; ++x) {
-        for (int y = 0; y < STABILITY_WIDTH_GRANULARITY; ++y) {
+    int sum[array_length][array_width];
+    for (int x = 0; x < array_length; ++x) {
+        for (int y = 0; y < array_width; ++y) {
             if (x == 0 && y == 0) {
                 // base case, no previously computed entries to count
                 sum[x][y] = 0;
@@ -508,20 +518,49 @@ void compute_stable_positions(int item_length, int item_width, int base_height, 
         }
     }
 
+    dPrintf(4, "compute_stable_positions: the precomputed sums:\n");
+    for (int y = array_width - 1; y >= 0; --y) {
+        for (int x = 0; x < array_length; ++x) {
+            // pad with 0s
+            dPrintf(4, " %03d ", sum[x][y]);
+        }
+        dPrintf(4, "\n");
+    }
+
     // TODO: iterate lower left corners
     // TODO: if within some error, return true and modify solution co-ords
 
     // iterate y first because we value as low y as possible
-    for (int lly = 0; lly < STABILITY_WIDTH_GRANULARITY; ++lly) {
-        for (int llx = 0; llx < STABILITY_LENGTH_GRANULARITY; ++llx) {
-            //    C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
-            // TODO: boundary cases *sigh*
-//            int supporting_entries =
-//                    sum[this->x + this->length - 1][this->y + this->width - 1]
-//                    - sum[this->x + this->length - 1][this->y - 1]
-//                    - sum[this->x - 1][this->y + this->width - 1]
-//                    + sum[this->x - 1][this->y - 1];
-//            // TODO: work from here
+    for (int lly = 0; lly < array_width - item_width; ++lly) {
+        for (int llx = 0; llx < array_length - item_length; ++llx) {
+            int supportingEntries = -1;
+            if (llx == 0 && lly == 0) {
+                // we have already computed this case
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1];
+            } else if (llx == 0) {
+                // +-+ o \_ we sum this square part
+                // +-+ o /
+                // o o o <- and remove the rectangle below
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                        - sum[llx + item_length - 1][lly - 1];
+            } else if (lly == 0) {
+                // symmetric to the above
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                        - sum[llx - 1][lly + item_width - 1];
+            } else {
+                // in the general case, we subtract the lower-left subarray twice,
+                // so we add it back afterwards
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                                  - sum[llx + item_length - 1][lly - 1]
+                                  - sum[llx - 1              ][lly + item_width - 1]
+                                  + sum[llx - 1              ][lly - 1];
+            }
+            dAssert(supportingEntries >= 0, "We found a positive amount of supporting entries.");
+
+            // is it stable
+            double support_fraction = double(supportingEntries) /
+                    double(item_width * item_length);
+            stable_positions[llx][lly] = (support_fraction > STABILITY_SUPPORT_FRACTION);
         }
     }
 
@@ -563,7 +602,6 @@ std::tuple<int, int, int> pick_best_candidate(
 
     // sort the candidates first because filtering is more expensive
     std::sort(candidates.begin(), candidates.end(), HEURISTIC_COMP);
-    // TODO: copy of candidates sorted by z for compute_stable_positions?
 
     // used to decide whether the manipulator arm can reach certain spots
     std::vector<MaximumEmptyCuboid> empty_spaces(candidates); // copy
@@ -702,7 +740,7 @@ bool process_optimiser_main(const double * box_points,
     }
 }
 
-#define MAIN 1
+#define MAIN 2
 
 #if (MAIN==1)
 int main() {
@@ -724,15 +762,15 @@ int main() {
     std::vector<Cuboid> cuboids;
 
     // test packing items
-    Cuboid c1 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c2 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c3 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c4 = {-1, -1, -1, 20, 20, 50};
-    Cuboid c5 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c6 = {-1, -1, -1, 40, 40, 50};
-    Cuboid c7 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c8 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c9 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c1 = {-1, -1, -1, 10, 20, 10};
+    Cuboid c2 = {-1, -1, -1, 30, 50, 40};
+    Cuboid c3 = {-1, -1, -1, 5, 5, 10};
+    Cuboid c4 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c5 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c6 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c7 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c8 = {-1, -1, -1, 50, 20, 30};
+    Cuboid c9 = {-1, -1, -1, 10, 50, 60};
     Cuboid c10 = {-1, -1, -1, 10, 10, 10};
 
 //    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
