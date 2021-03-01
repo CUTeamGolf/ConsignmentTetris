@@ -4,13 +4,13 @@
 #include <stack>
 #include <cmath>
 #include <utility>
-#include "process_optimiser.h"
 #include <string>
 #if __has_include(<simstruc.h>)
 # include <simstruc.h>
 #endif
 #include <cassert>
 
+#include "process_optimiser.h"
 /*  ---------------------- CLASS METHODS ------------------------------------ */
 
 bool Cuboid::operator<(const Cuboid &other) const {
@@ -45,16 +45,17 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     this->width = yDim.second;
     this->z = zDim.first;
     this->height = zDim.second;
+
     // Do assertions on the results
-    dAssert(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "computed x value is out of bounds.");
-    dAssert(this->y >= 0 && this->y < MER_LENGTH_GRANULARITY, "computed y value is out of bounds.");
-    dAssert(this->z >= 0 && this->z < MER_LENGTH_GRANULARITY, "computed z value is out of bounds.");
-    dAssert(this->x + this->length < MER_LENGTH_GRANULARITY, "computed length in x-dimension is out of bounds.");
-    dAssert(this->length > 0, "the cuboid has a zero or lower length");
-    dAssert(this->y + this->width < MER_LENGTH_GRANULARITY, "computed width in y-dimension is out of bounds.");
-    dAssert(this->width > 0, "the cuboid has a zero or lower width");
-    dAssert(this->z + this->height < MER_LENGTH_GRANULARITY, "computed height in z-dimension is out of bounds.");
-    dAssert(this->height > 0, "the cuboid has a zero or lower height");
+    dAssert(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
+    dAssert(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
+    dAssert(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
+    dAssert(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
+    dAssert(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
+    dAssert(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
+    dAssert(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
+    dAssert(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
+    dAssert(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
 
 }
 
@@ -712,6 +713,8 @@ bool process_optimiser_main(const double * box_points,
             tetromino.length, tetromino.width, tetromino.height);
 
     dPrintf(2, "process_optimiser_main: Running phase 1 of the algorithm...\n");
+
+    return true;
     // run phase 1 of the algorithm
     std::vector<MaximumEmptyCuboid> candidates =
             find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, MER_HEIGHT_GRANULARITY);
