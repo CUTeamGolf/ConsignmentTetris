@@ -25,9 +25,11 @@
 
 // assertions
 #ifdef SS_STDIO_AVAILABLE
-# define dAssert(statement, msg, ...) do { if (!(statement)) {ssPrintf("ASSERTION ERROR: " msg "\n", ##__VA_ARGS__); throw "STOPPING EXECUTION BECAUSE OF ASSERTION ERROR"; } } while (0)
+# define dAssertSoft(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); ASSERTION_FAILURES++; } } while (0)
+# define dAssertHard(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); throw "STOPPING EXECUTION BECAUSE OF ASSERTION ERROR"; } } while (0)
 #else
-# define dAssert(statement, msg, ...) do { assert((statement) && (msg)); } while (0)
+# define dAssertSoft(statement, msg, ...) do { if (!(statement)) { printf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); ASSERTION_FAILURES++; } } while (0)
+# define dAssertHard(statement, msg, ...) do { assert((statement) && (msg)); } while (0)
 #endif
 
 /** Matlab compiler workaround */

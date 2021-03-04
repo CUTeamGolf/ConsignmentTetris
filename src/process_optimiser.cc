@@ -11,6 +11,10 @@
 #include <cassert>
 
 #include "process_optimiser.h"
+
+// for counting the number of soft assertions
+int ASSERTION_FAILURES = 0;
+
 /*  ---------------------- CLASS METHODS ------------------------------------ */
 
 bool Cuboid::operator<(const Cuboid &other) const {
@@ -29,7 +33,7 @@ std::pair<int, int> box_tetromino_constructor_aux(double GRANULARITY, double rea
 }
 // TODO: docs
 BoxTetromino::BoxTetromino(double x, double y, double z,
-                           double l, double w, double h, const PackingBox & pb) :
+                           double l, double w, double h, const PackingBox & pb) : Cuboid(),
         real_x(x), real_y(y), real_z(z), real_length(l), real_width(w), real_height(h) {
     // compute the dimensions by bounding the real values
     std::pair<int, int> xDim = box_tetromino_constructor_aux(MER_LENGTH_GRANULARITY,
@@ -47,15 +51,15 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     this->height = zDim.second;
 
     // Do assertions on the results
-    dAssert(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
-    dAssert(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
-    dAssert(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
-    dAssert(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
-    dAssert(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
-    dAssert(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
-    dAssert(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
-    dAssert(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
-    dAssert(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
+    dAssertSoft(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
+    dAssertSoft(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
+    dAssertSoft(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
 
 }
 
@@ -260,7 +264,7 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 
     // start on the right because we expand cache leftwards
     for (int x = array_length - 1; x >= 0; x--) {
-        dAssert(s.empty(), "find_all_maximum_empty_rectangles starts with an empty stack.");
+        dAssertHard(s.empty(), "find_all_maximum_empty_rectangles starts with an empty stack.");
         // determine content for this column
         update_cache<array_length, array_width>(cache, x, occupied_space);
 
@@ -396,7 +400,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
 
     // assert mecs sorted by z in descending order
     for (int i = 0; i < empty_spaces.size(); ++i) {
-        dAssert(i == 0 || !(BOTTOM_FACE_COMP(empty_spaces[i], empty_spaces[i - 1])),
+        dAssertHard(i == 0 || !(BOTTOM_FACE_COMP(empty_spaces[i], empty_spaces[i - 1])),
             "compute_reachable_positions: The empty_spaces passed are sorted in ascending order");
     }
 
@@ -406,7 +410,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
 
     // subtracting one gives the last MEC with a height lower than manipulator_height, and this should exist
     // because of the dummy box added before invokign this function.
-    dAssert(c != empty_spaces.begin() && !empty_spaces.empty(),
+    dAssertHard(c != empty_spaces.begin() && !empty_spaces.empty(),
             "compute_reachable_positions: The upper_bound is valid.");
 
     // this cannot be the dummy box, so the - 1 is safe
@@ -463,7 +467,7 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
 
     // assert cuboids sorted by z + height in ascending order
     for (int i = 0; i < cuboids.size(); ++i) {
-        dAssert(i == 0 || !(cuboids[i].z + cuboids[i].height < cuboids[i - 1].z + cuboids[i - 1].height),
+        dAssertHard(i == 0 || !(cuboids[i].z + cuboids[i].height < cuboids[i - 1].z + cuboids[i - 1].height),
                 "compute_stable_positions: The cuboids passed are sorted in ascending order by top-face");
     }
 
@@ -482,9 +486,9 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
     Cuboid temp = {0, 0, base_height, 0, 0, 0};
     auto supportingCuboid = std::lower_bound(cuboids.begin(), cuboids.end(), temp);
 
-    dAssert(supportingCuboid != cuboids.end(),
+    dAssertHard(supportingCuboid != cuboids.end(),
             "one or more supporting cuboids were found.");
-    dAssert(supportingCuboid->z + supportingCuboid->height == base_height,
+    dAssertHard(supportingCuboid->z + supportingCuboid->height == base_height,
             "the supporting cuboid has a top-face equal to the base height");
 
     // iterate all the supporting cuboids, and note their supporting area
@@ -528,9 +532,6 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
         dPrintf(4, "\n");
     }
 
-    // TODO: iterate lower left corners
-    // TODO: if within some error, return true and modify solution co-ords
-
     // iterate y first because we value as low y as possible
     for (int lly = 0; lly < array_width - item_width; ++lly) {
         for (int llx = 0; llx < array_length - item_length; ++llx) {
@@ -556,7 +557,7 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
                                   - sum[llx - 1              ][lly + item_width - 1]
                                   + sum[llx - 1              ][lly - 1];
             }
-            dAssert(supportingEntries >= 0, "We found a positive amount of supporting entries.");
+            dAssertHard(supportingEntries >= 0, "We found a positive amount of supporting entries.");
 
             // is it stable
             double support_fraction = double(supportingEntries) /
@@ -711,6 +712,11 @@ bool process_optimiser_main(const double * box_points,
     }
     dPrintf(2, "process_optimiser_main: Attempting to place cuboid with dimensions l=%d, w=%d, h=%d\n",
             tetromino.length, tetromino.width, tetromino.height);
+
+    if (ASSERTION_FAILURES > 0) {
+        dPrintf(1, "Found %d assertion failures. Stopping the simulation...\n", ASSERTION_FAILURES);
+        throw "STOP";
+    }
 
     dPrintf(2, "process_optimiser_main: Running phase 1 of the algorithm...\n");
 
