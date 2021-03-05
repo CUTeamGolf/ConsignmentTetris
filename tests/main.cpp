@@ -1,5 +1,5 @@
+#define GET_FULL_PROCESS_OPTIMISER_HEADER
 #define CATCH_CONFIG_MAIN
-// TODO: check if this is supported by the Jenkins compiler
 #if __has_include(<catch.hpp>)
 # include <catch.hpp>
 #else

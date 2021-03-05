@@ -1,7 +1,7 @@
 #ifndef PROCESS_OPTIMISER_HEADER
 #define PROCESS_OPTIMISER_HEADER
 
-/** TUNABLE PARAMETERS */
+/* --- TUNABLE PARAMETERS --- */
 // the dimensions of the virtual co-ordinate system (accuracy-efficiency tradeoff)
 #define MER_LENGTH_GRANULARITY 1000
 #define MER_WIDTH_GRANULARITY  1000
@@ -14,7 +14,11 @@
 // controls amount of debugging info (0 disables debugging)
 #define DEBUG_VERBOSITY 2
 
-/** debugging macros */
+/* --- debugging macros --- */
+// NOTE on SS_STDIO_AVAILABLE:
+//   this macro is defined in <simstruc.h>,
+//   so this should be included *before* process_optimiser.h
+
 // basic print statements
 #ifdef SS_STDIO_AVAILABLE
 // debug print to simulink diagnostics window
@@ -32,23 +36,19 @@
 # define dAssertHard(statement, msg, ...) do { assert((statement) && (msg)); } while (0)
 #endif
 
-/** Matlab compiler workaround */
+/* --- Matlab compiler workaround --- */
 // The matlab-C++ linker only supports a subset
 // of C++ and the standard library, so incompatible
 // function prototypes are masked unless this flag
 // is defined. Please define it before including this
 // header file if you want to access those functions
-// as well for e.g. unit testing.
+// as well for e.g. unit testing. The flag is:
+    #define GET_FULL_PROCESS_OPTIMISER_HEADER
 
-//#define GET_FULL_PROCESS_OPTIMISER_HEADER
-
-/** standard library features used in prototypes */
+/* --- standard library features used in prototypes --- */
 #include <vector>
 #include <bitset>
 #include <iostream>
-
-/** Data containers (structs and classes) */
-struct DUMMY_STRUCT_TO_SILENCE_ABOVE_COLORED_DOCUMENTATION {};
 
 /**
  * Represents the free space in the
@@ -91,6 +91,26 @@ struct Cuboid {
      */
     bool operator<(const Cuboid& other) const;
 };
+
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Auxiliary function for the BoxTetromino constructor.
+ *
+ * Computes the coordinate and size in some
+ * virtual 1D coordinate system of size 0 <= x < GRANULARITY
+ * based on a real co-ordinate and real size relative to another real co-ordinate
+ * and real size.
+ *
+  * @param GRANULARITY the number of units in the resulting coordinate system
+  * @param real_c real actual coordinate of point
+  * @param real_size real actual length of line
+  * @param packing_box_c real actual coordinate of origin
+  * @param packing_box_size real actual size in which it's assumed real_size + real_c is less than
+  * @return a pair of integer coordinate x and size s as described above.
+  */
+std::pair<int, int> box_tetromino_constructor_aux(double GRANULARITY, double real_c,
+                                                  double real_size, double packing_box_c, double packing_box_size);
+#endif
 
 /**
  * Represents a simscape multibody box.
@@ -171,6 +191,8 @@ struct MaximumEmptyCuboid {
      * @return a lambda that can be used to sort a list of MECs by their
      * z-value in non-decreasing order
      */
+     // this is commented out due to the MEX compiler not supporting this
+     // C++11? feature
 //    static auto get_bottom_face_comp();
 
     /**
@@ -184,6 +206,8 @@ struct MaximumEmptyCuboid {
      * - none of the above but the volume is smaller
      * @return a lambda that can be used to sort a list of MECs by the above criteria
      */
+     // this is commented out due to the MEX compiler not supporting this
+     // C++11? feature
 //     static auto get_heuristic_comp();
 
     /**
@@ -193,7 +217,7 @@ struct MaximumEmptyCuboid {
      * @param item_height
      * @return true if there is room for the item, false otherwise
      */
-    bool can_fit_item(int item_length, int item_width, int item_height);
+    bool can_fit_item(int item_length, int item_width, int item_height) const;
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
     //// Used for exporting a string representation of the MEC that the cuboid_visualiser.m script supports
@@ -220,17 +244,59 @@ template<size_t array_length, size_t array_width>
 void fill_occupied_space(bool occupied_space[array_length][array_width], const Cuboid & c);
 #endif
 
+#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Prints a 2D boolean array to stdout in a readable format
+ * @tparam array_length the length of the array
+ * @tparam array_width the width of the passed array
+ * @param verbosity if this parameter is higher than DEBUG_VERBOSITY,
+ *   nothing will be printed to stdout.
+ * @param arr the passed boolean array
+ */
+template <size_t array_length, size_t array_width>
+void dPrint_array(int verbosity, bool arr[array_length][array_width]);
+#endif
+
 /* -------------------- phase 1 utility methods -------------------- */
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
-// TODO: docs
+/**
+ * Utility method only used by find_all_maximum_empty_rectangles.
+ * If given a valid cache for x + 1, the method updated the cache
+ * to be valid for x. A cache is valid for x if:
+ *   x' = cache[y] denotes that all entries in
+ *   occupied_space[x .. x'][y] starting from (x, y) and ending
+ *   at (x', y) (inclusive) are consecutive 0s.
+ * @tparam array_length length of array
+ * @tparam array_width one less than width of array
+ * @param cache a valid cache for x + 1
+ * @param x a x coordinate
+ * @param occupied_space a boolean matrix
+ */
 template <size_t array_length, size_t array_width>
 void update_cache(int cache[array_width + 1], int x,
                   bool occupied_space[array_length][array_width]);
 #endif
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
-// TODO: docs
+/**
+ * Removes all rectangles that are fully surrounded by another rectangle
+ * on all four sides.
+ *
+ * @Precondition
+ * For all rectangles in the input, if it is not a maximum empty rectangle,
+ * it should only be possible to extend it 1 or more units in
+ * the -x direction to get a valid maximum empty rectangle. No other expansion
+ * directions should be possible.
+ *
+ * @Postcondition
+ * Every rectangle in the result is a valid maximum empty rectangle.
+ *
+ * @param rectangles a vector of MaximumEmptyRectangles that satisfies
+ * the pre-condition described above.
+ * @return a vector of MaximumEmptyRectangles that satisfies the post-condition
+ * described above.
+ */
 std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
         std::vector<MaximumEmptyRectangle> & rectangles);
 #endif
@@ -252,9 +318,11 @@ std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
  * any of the four directions should introduce at least one entry
  * with a true in it, or cause the rectangle to go out of bounds.
  *
+ * @tparam array_length the size of the first dimension of the array
+ * @tparam array_width the size of the second dimension of the array
  * @param occupied_space is the boolean matrix
  * @return a vector of MaximumEmptyRectangles that should
- * all satisy the above * described properties.
+ * all satisfy the above described properties.
  */
 template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
@@ -264,49 +332,115 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 /* -------------------- phase 1 driver function -------------------- */
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Takes information about the box and its contents and finds all
+ * maximum empty cuboids (MEC) composed of empty space.
+ *
+ * @MaximumEmptyCuboid_properties There is no cuboid c in the
+ * input list cuboids such that it intersects with the MEC
+ * @MaximumEmptyCuboid_properties Expanding the MEC in any of
+ * the 6 possible direction by 1 unit should either make it
+ * intersect with a cuboid from the input list, or cause the MEC
+ * to go out of bounds in the coordinate system where 0 <= x < array_length,
+ * 0 <= y < array_width, 0 <= z < box_height
+ *
+ * @tparam array_length number of units in the x-direction in the coordinate system
+ * @tparam array_width number of units in the y-direction in the coordinate system
+ * @param cuboids a vector of cuboids where each cuboid should be in bound
+ * in the above described coordinate system
+ * @param box_height number of units in the z-direction in the coordinate system
+ * @return a vector of MECs satisfying the properties described above.
+ */
+template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, int box_height);
 #endif
 
 /* -------------------- phase 2 utility methods -------------------- */
-/**
- * manipulator_height is the z-value the manipulator needs to reach to place the item,
- *   so it's the sum of the empty space's z value and the item's height.
- */
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Fills the feasible_pos array at entry (x, y) with a 1 if there
+ * is some MEC in empty_spaces with a z-value lower than manipulator_height
+ * that can fit an item of dimensions item_length x item_width were it to
+ * be placed with its left corner at (x, y). In other words, if feasible_pos[x][y]
+ * is true, the manipulator arm has room to place an item at bottom lower left corner
+ * (x, y, manipulator_height - item_height).
+ *
+ * The empty_spaces vector should include a dummy MEC with z = -1 that
+ * represents the empty space of the area of the box.
+ *
+ * @tparam array_length size of x dimension
+ * @tparam array_width size of y dimension
+ * @param item_length
+ * @param item_width
+ * @param manipulator_height the height at which the manipulator will drop the item
+ * @param feasible_pos
+ * @param empty_spaces a vector of MECs
+ */
 template <size_t array_length, size_t array_width>
 void compute_reachable_positions(int item_length, int item_width, int manipulator_height,
                                  bool feasible_pos[array_length][array_width],
                                  const std::vector<MaximumEmptyCuboid>& empty_spaces);
 #endif
 
-/**
- * base_height is the height at which the base of the item will be placed i.e. the supporting ground height
- */
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Fills the stable_positions array at entry (x, y) with a 1 if
+ * placing the lower left corner of an item with
+ * dimensions item_length x item_width there
+ * would result in STABILITY_SUPPORT_FRACTION of the item's base
+ * being supported by cuboids in cuboids.
+ *
+ * @tparam array_length size of first dimensions of stable_position
+ * @tparam array_width size of second dimension of stable_position
+ * @param item_length length of item to make stable
+ * @param item_width width of item to make stable
+ * @param base_height z-value to place item at. This value <strong>must be equal
+ * to c.z + c.height for some c in cuboids</strong>, otherwise the method will
+ * halt.
+ * @param stable_positions boolean 2D array that will have its values
+ * overwritten
+ * @param cuboids a vector of the cuboids currently in the box. These
+ * must be sorted in non-decreasing order by z + height.
+ */
 template <size_t array_length, size_t array_width>
-void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
+void compute_stable_positions(int item_length, int item_width, int base_height,
+                              bool stable_positions[array_length][array_width],
                               const std::vector<Cuboid> &cuboids);
 #endif
 /* -------------------- phase 2 driver function -------------------- */
 
-/**
- * Given a list of candidates, picks a position from the best
- * one that works, where "works" is defined as:
- *   (i) the item fits in the EMC without clipping through it
- *   (ii) the item is stable (@see compute_stable_positions)
- *   (iii) the EMC extends all the way to the top of the packing box
- * and "best" is defined as:
- *   TODO: explain
- * @param length
- * @param width
- * @param height
- * @param candidates
- * @return TODO: usual case..
- *   When no solution is found, returns (-1, -1, -1)
- *   TODO: throw exception instead?
- */
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
+/**
+ * Given a list of candidate MECs, picks a bottom lower left position
+ * to place an item of dimensions length x width x height that is
+ * (i) possible and (ii) the best according to our heuristic comparing
+ * possible positions.
+ *
+ * @possible the item fits in the EMC without clipping through it
+ * @possible the item is stable (see compute_stable_positions)
+ * @possible the EMC extends all the way to the top of the packing box
+ *
+ * @heuristic a lower z value is always better
+ * @heuristic if z value is the same, a lower y value is better
+ * @heuristic if z and y is the same, a lower x is better
+ *
+  * @tparam array_length size of the first dimension of the
+  * coordinate system used by the cuboids and candidates
+  * @tparam array_width size of the second dimension of the
+  * coordinate system used by the cuboids and candidates
+  * @param length length of cuboid to place
+  * @param width width of cuboid to place
+  * @param height height of cuboid to place
+  * @param candidates a list of candidate MECs computed based
+  * on the cuboid already in the box. This vector will be modified
+  * to be sorted according to a heurisitic.
+  * @param cuboids a list of cuboids already in the box. This vector
+  * will be modified to be sorted by ascending z + height
+  * @return a tuple (x, y, z) at which to place the bottom lower left
+  * corner of the item. If no possible positions are found (see above),
+  * the tuple (-1, -1, -1) is returned.
+ */
 template <size_t array_length, size_t array_width>
 std::tuple<int, int, int> pick_best_candidate(
         int length, int width, int height,
@@ -318,14 +452,33 @@ std::tuple<int, int, int> pick_best_candidate(
 /* -------------------- main driver function -------------------- */
 
 /**
- * TODO: docs
- * @param box_points
- * @param item_points
- * @param item_points_size
- * @param item_indices
- * @param item_indices_size
- * @param tetromino_position
- * @return
+ * Takes information of the packing box and its contents, and tries to find
+ * a position in which an item of dimensions specified in item_points can fit.
+ * It then puts the result in result_position.
+ *
+ * @headerfile_parameters MER_LENGTH_GRANULARITY specifies the size of the first
+ * dimension of the virtual coordinate system.
+ * @headerfile_parameters MER_WIDTH_GRANULARITY specifies the size of the second
+ * dimension of the virtual coordinate system.
+ * @headerfile_parameters MER_HEIGHT_GRANULARITY specifies the size of the third
+ * dimension of the virtual coordinate system.
+ *
+ * @param box_points an array of length 6 where the first three elements (x, y, z)
+ * specifies the position of the inner bottom leftmost lower corner of the packing
+ * box in real matlab coordinates.
+ * @param item_points an array of length item_points_size where each tuple (x, y, z)
+ * specifies a point belonging to an item (see item_indices)
+ * @param item_points_size size of item_points, should be a multiple of 3
+ * @param item_indices each item x in this list specifies that tuples in
+ * item_points[x ... y) belong to one cuboid, where y is the next value in item_indices,
+ * and is the end of the list of x is the last item
+ * @param item_indices_size the number of cuboids i.e. size of item_points
+ * @param tetromino_dimensions an array of size 3 specifying the dimensions of the item to pack,
+ * length, width, height
+ * @param result_position the resulting position (x, y, z) is saved in this array, so it must be
+ * passed by reference
+ * @return true if an possible position was found. False otherwise, in which case the values
+ * in result_position will be meaningless.
  */
 bool process_optimiser_main(const double * box_points,
                             const double * item_points,
@@ -333,94 +486,6 @@ bool process_optimiser_main(const double * box_points,
                             const double * item_indices,
                             int item_indices_size,
                             double * tetromino_dimensions,
-                            double * tetromino_position);
-
-/* ---------- Pseudo code for the algorithm as a whole ----------*/
-/**
- * A high-level description of the algorithm to implement
- *
- * INPUT:
- *  - The position of the "deepest-bottom-leftmost" corner of the box
- *    (i.e. the corner with the lowest possible values for x,y,z) as
- *    well as its dimensions (length, width, height).
- *  - A list of length n with information about (a superset of)
- *    the items currently in the box. Let x_i, y_i, z_i be the
- *    position of the "deepest-bottom-leftmost" corner of the ith
- *    item and l_i, w_i, h_i be the corresponding dimensions.
- *  - Information about the item to be placed (l, w, h).
- *
- * PARAMETERS:
- *  - M (granularity for LER)
- *  - M' (granularity for stability check)
- *  - ERROR (deltaZ for determining if two items are at same height)
- *  - W_1 and W_2  weights for the two heuristics
- *
- * PSEUDOCODE:
- *
- * // Phase 1: get a list of Empty-Maximum-Space (EMS) candidates
- * sort the placed items by z + h (i.e. by height of the top face)
- * occupied_space <- M x M boolean matrix initialised to 0
- * candidates     <- empty list
- *
- * for i in n .. 0 do
- *   fill occupied_space with a 1 for each XY co-ordinate covered by the shadows of
- *       the [i .. n]th objects projected onto the XY plane
- *   if z_i + h_i is just slightly below previous height, skip this iteration
- *   MERs <- find_all_maximum_empty_rectangles(occupied_space)             // (*)
- *   foreach (ll, ur) in MERs do
- *     push ((ll.x, ll.y, z_i), (ur.x, ur.y, z_i + h_i)) to candidates
- *   end
- * end
- *
- * // Phase 2: filter and sort the candidates
- * P             <- empty list
- * foreach c in candidates do
- *   foreach allowed rotation of item i do
- *     if item i fits in EMS then
- *       push (c, rotation, most_stable_pos) to P
- *     endif
- *   end
- * end
- *
- * only keep the best candidates among those with same (ll, ur) (in XY space)
- *
- *
- * sort items in P in non-decreasing order by a score calculated as follows:
- *   W_1 * [(box_height - c.z) * 100 + (box_width - c.y) * 10 + (box_length - c.x)] + (?)
- *   W_2 * [XY area of c - XY area of item i]
- *
- * for  i in 0 .. length(P) do
- *   if item_is_stable(i, rotation) then use this solution with the
- *       corresponding stable position                                    // (**)
- * end
- *
- * if no stable solutions found
- *   say "next box"
- *
- * NOTES ON COMPLEMENTARY FUNCTIONS:
- *
- * (*) find_all_maximum_empty_rectangles:
- *   This function finds all rectangles covering only 0's
- *   This is possible to do in O(M^2) time, but
- *   the specific details are not here yet.
- *
- * (**) item_is_stable:
- *   make M' x M' boolean matrix of candidate rectangle
- *   foreach item packed directly under (to some error) do
- *     add 1's to the matrix where the item is located
- *   end
- *   for all possible lower left corners to place the item do
- *     find number of 1's in the area (can be done efficiently with pre-compute)
- *   end
- *   select the bottomost-leftmost corner such that stability (proportion of 1's)
- *       is within some margin of tolerance
- *   otherwise return false
- *
- *   Ideas: keep track of ur of placed items so no pre-processing
- *       where know it's all 0s
- *          let C[x, y] be the sum of 1's in M[0 .. x, 0 .. y], then
- *       can compute number of 1's in an area with
- *       C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
- */
+                            double * result_position);
 
 #endif //#ifndef PROCESS_OPTIMISER_HEADER
