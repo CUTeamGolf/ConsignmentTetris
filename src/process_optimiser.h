@@ -7,29 +7,29 @@
 #define MER_WIDTH_GRANULARITY  1000
 #define MER_HEIGHT_GRANULARITY 1000
 // XY area of the bounding box for the manipulator in the virtual co-ordinate system
-#define ROBOT_ARM_LENGTH 50
-#define ROBOT_ARM_WIDTH 50
+#define ROBOT_ARM_LENGTH 30
+#define ROBOT_ARM_WIDTH 30
+// the fraction of ground support needed to deem a placement "stable"
+#define STABILITY_SUPPORT_FRACTION 0.6
 // controls amount of debugging info (0 disables debugging)
 #define DEBUG_VERBOSITY 0
-
-// IGNORE THESE
-#define STABILITY_LENGTH_GRANULARITY 100
-#define STABILITY_WIDTH_GRANULARITY 100
 
 /** debugging macros */
 // basic print statements
 #ifdef SS_STDIO_AVAILABLE
 // debug print to simulink diagnostics window
-# define dPrintf(verb, str, args) do { if (DEBUG_VERBOSITY >= verb) ssPrintf(str, args); } while (0)
+# define dPrintf(verb, str, ...) do { if (DEBUG_VERBOSITY >= verb) ssPrintf(str, ##__VA_ARGS__); } while (0)
 #else
 # define dPrintf(verb, str, ...) do { if (DEBUG_VERBOSITY >= (verb)) printf(str, ##__VA_ARGS__); } while (0)
 #endif
 
 // assertions
 #ifdef SS_STDIO_AVAILABLE
-# define dAssert(statement, msg) do { if (!(statement)) ssPrintf("ASSERTION FAILED: " msg "\n"); } while (0)
+# define dAssertSoft(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); ASSERTION_FAILURES++; } } while (0)
+# define dAssertHard(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); throw "STOPPING EXECUTION BECAUSE OF ASSERTION ERROR"; } } while (0)
 #else
-# define dAssert(statement, msg) do { assert((statement) && (msg)); } while (0)
+# define dAssertSoft(statement, msg, ...) do { if (!(statement)) { printf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); ASSERTION_FAILURES++; } } while (0)
+# define dAssertHard(statement, msg, ...) do { assert((statement) && (msg)); } while (0)
 #endif
 
 /** Matlab compiler workaround */

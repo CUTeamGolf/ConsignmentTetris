@@ -4,12 +4,16 @@
 #include <stack>
 #include <cmath>
 #include <utility>
-#include "process_optimiser.h"
 #include <string>
 #if __has_include(<simstruc.h>)
 # include <simstruc.h>
 #endif
 #include <cassert>
+
+#include "process_optimiser.h"
+
+// for counting the number of soft assertions
+int ASSERTION_FAILURES = 0;
 
 /*  ---------------------- CLASS METHODS ------------------------------------ */
 
@@ -29,7 +33,7 @@ std::pair<int, int> box_tetromino_constructor_aux(double GRANULARITY, double rea
 }
 // TODO: docs
 BoxTetromino::BoxTetromino(double x, double y, double z,
-                           double l, double w, double h, const PackingBox & pb) :
+                           double l, double w, double h, const PackingBox & pb) : Cuboid(),
         real_x(x), real_y(y), real_z(z), real_length(l), real_width(w), real_height(h) {
     // compute the dimensions by bounding the real values
     std::pair<int, int> xDim = box_tetromino_constructor_aux(MER_LENGTH_GRANULARITY,
@@ -45,16 +49,17 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     this->width = yDim.second;
     this->z = zDim.first;
     this->height = zDim.second;
+
     // Do assertions on the results
-    dAssert(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "computed x value is out of bounds.");
-    dAssert(this->y >= 0 && this->y < MER_LENGTH_GRANULARITY, "computed y value is out of bounds.");
-    dAssert(this->z >= 0 && this->z < MER_LENGTH_GRANULARITY, "computed z value is out of bounds.");
-    dAssert(this->x + this->length < MER_LENGTH_GRANULARITY, "computed length in x-dimension is out of bounds.");
-    dAssert(this->length > 0, "the cuboid has a zero or lower length");
-    dAssert(this->y + this->width < MER_LENGTH_GRANULARITY, "computed width in y-dimension is out of bounds.");
-    dAssert(this->width > 0, "the cuboid has a zero or lower width");
-    dAssert(this->z + this->height < MER_LENGTH_GRANULARITY, "computed height in z-dimension is out of bounds.");
-    dAssert(this->height > 0, "the cuboid has a zero or lower height");
+    dAssertSoft(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
+    dAssertSoft(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
+    dAssertSoft(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
 
 }
 
@@ -259,7 +264,7 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
 
     // start on the right because we expand cache leftwards
     for (int x = array_length - 1; x >= 0; x--) {
-        dAssert(s.empty(), "find_all_maximum_empty_rectangles starts with an empty stack.");
+        dAssertHard(s.empty(), "find_all_maximum_empty_rectangles starts with an empty stack.");
         // determine content for this column
         update_cache<array_length, array_width>(cache, x, occupied_space);
 
@@ -395,7 +400,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
 
     // assert mecs sorted by z in descending order
     for (int i = 0; i < empty_spaces.size(); ++i) {
-        dAssert(i == 0 || !(BOTTOM_FACE_COMP(empty_spaces[i], empty_spaces[i - 1])),
+        dAssertHard(i == 0 || !(BOTTOM_FACE_COMP(empty_spaces[i], empty_spaces[i - 1])),
             "compute_reachable_positions: The empty_spaces passed are sorted in ascending order");
     }
 
@@ -405,7 +410,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
 
     // subtracting one gives the last MEC with a height lower than manipulator_height, and this should exist
     // because of the dummy box added before invokign this function.
-    dAssert(c != empty_spaces.begin() && !empty_spaces.empty(),
+    dAssertHard(c != empty_spaces.begin() && !empty_spaces.empty(),
             "compute_reachable_positions: The upper_bound is valid.");
 
     // this cannot be the dummy box, so the - 1 is safe
@@ -446,28 +451,30 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
  * @return
  */
 template <size_t array_length, size_t array_width>
-void compute_stable_positions(int item_length, int item_width, int base_height, bool stable_positions[array_length][array_width],
-                                                  const std::vector<Cuboid> &cuboids) {
+void compute_stable_positions(int item_length, int item_width, int base_height,
+                              bool stable_positions[array_length][array_width],
+                              const std::vector<Cuboid> &cuboids) {
 
-    // TODO: remove stub
-    for (int x = 0; x < array_length; ++x) {
-        for (int y = 0; y < array_width; ++y) {
-            stable_positions[x][y] = true;
+    // base case for the box floor
+    if (base_height == 0) {
+        for (int x = 0; x < array_length; ++x) {
+            for (int y = 0; y < array_width; ++y) {
+                stable_positions[x][y] = true;
+            }
         }
+        return;
     }
-    return;
 
-    // base case, box floor is supporting TODO: remove hack
-//    if (true || this->z == 0) {
-//        this->has_computed_stable_position = true;
-//        this->stable_position = std::pair<int, int>(this->x, this->y);
-//        return true;
-//    }
+    // assert cuboids sorted by z + height in ascending order
+    for (int i = 0; i < cuboids.size(); ++i) {
+        dAssertHard(i == 0 || !(cuboids[i].z + cuboids[i].height < cuboids[i - 1].z + cuboids[i - 1].height),
+                "compute_stable_positions: The cuboids passed are sorted in ascending order by top-face");
+    }
 
     // TODO: this parameter has to be the same as the other one!
 
-    // initialise 2d array to all false
-    bool ground[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
+    // assume no stable ground at all
+    bool ground[array_length][array_width];
     for (auto & x : ground) {
         for (bool & y : x) {
             y = false;
@@ -479,17 +486,25 @@ void compute_stable_positions(int item_length, int item_width, int base_height, 
     Cuboid temp = {0, 0, base_height, 0, 0, 0};
     auto supportingCuboid = std::lower_bound(cuboids.begin(), cuboids.end(), temp);
 
+    dAssertHard(supportingCuboid != cuboids.end(),
+            "one or more supporting cuboids were found.");
+    dAssertHard(supportingCuboid->z + supportingCuboid->height == base_height,
+            "the supporting cuboid has a top-face equal to the base height");
+
     // iterate all the supporting cuboids, and note their supporting area
     while (supportingCuboid != cuboids.end() && supportingCuboid->z + supportingCuboid->height == base_height) {
         // fill_occupied_space
-        fill_occupied_space<STABILITY_LENGTH_GRANULARITY, STABILITY_WIDTH_GRANULARITY>(ground, *supportingCuboid);
+        fill_occupied_space<array_length, array_width>(ground, *supportingCuboid);
+        supportingCuboid++;
     }
 
+    dPrintf(4, "compute_stable_positions: the supporting ground at height z=%d:\n", base_height);
+    dPrint_array<array_length, array_width>(4, ground);
+
     // sum[x][y] gives the number of 1's in the area ground[0..x][0..y] (inclusive end)
-    int sum[STABILITY_LENGTH_GRANULARITY][STABILITY_WIDTH_GRANULARITY];
-    // TODO: precompute sums of 1s in C
-    for (int x = 0; x < STABILITY_LENGTH_GRANULARITY; ++x) {
-        for (int y = 0; y < STABILITY_WIDTH_GRANULARITY; ++y) {
+    int sum[array_length][array_width];
+    for (int x = 0; x < array_length; ++x) {
+        for (int y = 0; y < array_width; ++y) {
             if (x == 0 && y == 0) {
                 // base case, no previously computed entries to count
                 sum[x][y] = 0;
@@ -508,20 +523,46 @@ void compute_stable_positions(int item_length, int item_width, int base_height, 
         }
     }
 
-    // TODO: iterate lower left corners
-    // TODO: if within some error, return true and modify solution co-ords
+    dPrintf(4, "compute_stable_positions: the precomputed sums:\n");
+    for (int y = array_width - 1; y >= 0; --y) {
+        for (int x = 0; x < array_length; ++x) {
+            // pad with 0s
+            dPrintf(4, " %03d ", sum[x][y]);
+        }
+        dPrintf(4, "\n");
+    }
 
     // iterate y first because we value as low y as possible
-    for (int lly = 0; lly < STABILITY_WIDTH_GRANULARITY; ++lly) {
-        for (int llx = 0; llx < STABILITY_LENGTH_GRANULARITY; ++llx) {
-            //    C[x+w,y+l] - C[x+w, y] - C[x, y+l] + C[x, y]
-            // TODO: boundary cases *sigh*
-//            int supporting_entries =
-//                    sum[this->x + this->length - 1][this->y + this->width - 1]
-//                    - sum[this->x + this->length - 1][this->y - 1]
-//                    - sum[this->x - 1][this->y + this->width - 1]
-//                    + sum[this->x - 1][this->y - 1];
-//            // TODO: work from here
+    for (int lly = 0; lly < array_width - item_width; ++lly) {
+        for (int llx = 0; llx < array_length - item_length; ++llx) {
+            int supportingEntries = -1;
+            if (llx == 0 && lly == 0) {
+                // we have already computed this case
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1];
+            } else if (llx == 0) {
+                // +-+ o \_ we sum this square part
+                // +-+ o /
+                // o o o <- and remove the rectangle below
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                        - sum[llx + item_length - 1][lly - 1];
+            } else if (lly == 0) {
+                // symmetric to the above
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                        - sum[llx - 1][lly + item_width - 1];
+            } else {
+                // in the general case, we subtract the lower-left subarray twice,
+                // so we add it back afterwards
+                supportingEntries = sum[llx + item_length - 1][lly + item_width - 1]
+                                  - sum[llx + item_length - 1][lly - 1]
+                                  - sum[llx - 1              ][lly + item_width - 1]
+                                  + sum[llx - 1              ][lly - 1];
+            }
+            dAssertHard(supportingEntries >= 0, "We found a positive amount of supporting entries.");
+
+            // is it stable
+            double support_fraction = double(supportingEntries) /
+                    double(item_width * item_length);
+            stable_positions[llx][lly] = (support_fraction > STABILITY_SUPPORT_FRACTION);
         }
     }
 
@@ -563,7 +604,6 @@ std::tuple<int, int, int> pick_best_candidate(
 
     // sort the candidates first because filtering is more expensive
     std::sort(candidates.begin(), candidates.end(), HEURISTIC_COMP);
-    // TODO: copy of candidates sorted by z for compute_stable_positions?
 
     // used to decide whether the manipulator arm can reach certain spots
     std::vector<MaximumEmptyCuboid> empty_spaces(candidates); // copy
@@ -673,7 +713,13 @@ bool process_optimiser_main(const double * box_points,
     dPrintf(2, "process_optimiser_main: Attempting to place cuboid with dimensions l=%d, w=%d, h=%d\n",
             tetromino.length, tetromino.width, tetromino.height);
 
+    if (ASSERTION_FAILURES > 0) {
+        dPrintf(1, "Found %d assertion failures. Stopping the simulation...\n", ASSERTION_FAILURES);
+        throw "STOP";
+    }
+
     dPrintf(2, "process_optimiser_main: Running phase 1 of the algorithm...\n");
+
     // run phase 1 of the algorithm
     std::vector<MaximumEmptyCuboid> candidates =
             find_all_maximum_empty_cuboids<MER_LENGTH_GRANULARITY, MER_WIDTH_GRANULARITY>(cuboids, MER_HEIGHT_GRANULARITY);
@@ -702,7 +748,7 @@ bool process_optimiser_main(const double * box_points,
     }
 }
 
-#define MAIN 1
+#define MAIN 2
 
 #if (MAIN==1)
 int main() {
@@ -724,15 +770,15 @@ int main() {
     std::vector<Cuboid> cuboids;
 
     // test packing items
-    Cuboid c1 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c2 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c3 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c4 = {-1, -1, -1, 20, 20, 50};
-    Cuboid c5 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c6 = {-1, -1, -1, 40, 40, 50};
-    Cuboid c7 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c8 = {-1, -1, -1, 10, 10, 50};
-    Cuboid c9 = {-1, -1, -1, 10, 10, 50};
+    Cuboid c1 = {-1, -1, -1, 10, 20, 10};
+    Cuboid c2 = {-1, -1, -1, 30, 50, 40};
+    Cuboid c3 = {-1, -1, -1, 5, 5, 10};
+    Cuboid c4 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c5 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c6 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c7 = {-1, -1, -1, 25, 25, 20};
+    Cuboid c8 = {-1, -1, -1, 50, 20, 30};
+    Cuboid c9 = {-1, -1, -1, 10, 50, 60};
     Cuboid c10 = {-1, -1, -1, 10, 10, 10};
 
 //    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
