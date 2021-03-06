@@ -59,7 +59,13 @@ if nargin == 2
     guessVals = zeros(numel(guessIds), 1);
 end
 targetVals = [actuatorPos; actuatorVel; [0;0;0]]; % end effector orientation angles always [0;0;0]
+
+%generateCode(ks);
+%codegen -config:mex main_solveKinematics
+
 [outputVals, statusFlag] = solve(ks, targetVals, guessVals);
+
+%[outputVals, statusFlag] = main_solveKinematics_mex(targetVals, guessVals);
 newGuessVals = outputVals(guessInds);
 eePos = outputVals(eePosInds);
 eeVel = outputVals(eeVelInds);
