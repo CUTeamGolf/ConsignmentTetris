@@ -617,7 +617,7 @@ bool process_optimiser_main(const double * box_points,
     // Reset assertion counter
     ASSERTION_FAILURES = 0;
 
-    // assume the first co-ordinate is the lower one,                    !
+    // assume the first co-ordinate is the lower one,
     // second co-ordinate is the higher one
     PackingBox pb = {box_points[0], box_points[4], box_points[2],
                      box_points[3] - box_points[0],
@@ -715,7 +715,7 @@ bool process_optimiser_main(const double * box_points,
             result_position[0], result_position[1], result_position[2]);
 
     // return true if the item fits
-    if (result_position[0] == -1) {
+    if (std::get<0>(best_cand) == -1) {
         return false;
     } else {
         return true;
@@ -769,8 +769,8 @@ int main() {
 }
 #endif
 
+// Put hacks for template usage in unit tests here
 void IGNORE() {
-    // Put hacks for template usage in unit tests here
     bool occupied1[4][4];
     std::vector<MaximumEmptyRectangle> temp1 =
             find_all_maximum_empty_rectangles<4, 4>(occupied1);

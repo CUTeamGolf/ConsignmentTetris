@@ -15,3 +15,5 @@
 // find_all_maximum_empty_cuboids tests
 #include "process_optimiser_find_all_maximum_empty_cuboids.test.cc"
 
+// process_optimiser_main tests
+#include "process_optimiser_main_driver.test.cc"
