@@ -6,5 +6,12 @@
 # include "../externals/catch2/catch.hpp"
 #endif
 
+// BoxTetromino tests
+#include "process_optimiser_box_tetromino.test.cc"
+
 // find_all_maximum_rectangles tests
 #include "process_optimiser_find_all_maximum_empty_rectangles.test.cc"
+
+// find_all_maximum_empty_cuboids tests
+#include "process_optimiser_find_all_maximum_empty_cuboids.test.cc"
+

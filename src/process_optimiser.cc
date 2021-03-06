@@ -53,11 +53,11 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     dAssertSoft(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
     dAssertSoft(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
     dAssertSoft(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
-    dAssertSoft(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->x + this->length <= MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d <= %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
     dAssertSoft(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
-    dAssertSoft(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->y + this->width <= MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d <= %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
     dAssertSoft(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
-    dAssertSoft(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->z + this->height <= MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d <= %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
     dAssertSoft(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
 
 }
@@ -310,7 +310,7 @@ template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, const int box_height) {
 
-    // sort the cuboids by z-value of top-face in ascending order
+    // sort the cuboids by z-value of top-face in ascending order (z+height)
     std::sort(cuboids.begin(), cuboids.end());
     // in the first iteration of the below loop, we consider the top-face
     // of the highest item, so we don't want to add any occupying items.
@@ -361,9 +361,13 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 
         dPrintf(5, "find_all_maximum_empty_cuboids: Found %zu candidates:\n", mers.size());
         for (auto & mer : mers) {
-            candidates.emplace_back(mer, base_height, box_height - base_height);
-            dPrintf(5, "  %d %d %d %d %d %d;\n", candidates.back().x, candidates.back().y, candidates.back().z,
-                    candidates.back().length, candidates.back().width, candidates.back().height);
+            if (box_height - base_height > 0) {
+                candidates.emplace_back(mer, base_height, box_height - base_height);
+                dPrintf(5, "  %d %d %d %d %d %d;\n", candidates.back().x, candidates.back().y, candidates.back().z,
+                        candidates.back().length, candidates.back().width, candidates.back().height);
+            } else {
+                dPrintf(5, "  Skipped a candidate due to zero-height\n");
+            }
         }
     }
 
@@ -765,16 +769,20 @@ int main() {
 }
 #endif
 
-// Put hacks for template usage in unit tests here
-bool occupied1[4][4];
-std::vector<MaximumEmptyRectangle> temp1 =
-    find_all_maximum_empty_rectangles<4, 4>(occupied1);
-bool occupied2[2][2];
-std::vector<MaximumEmptyRectangle> temp2 =
-    find_all_maximum_empty_rectangles<2, 2>(occupied2);
-bool occupied3[50][50];
-std::vector<MaximumEmptyRectangle> temp3 =
-    find_all_maximum_empty_rectangles<50, 50>(occupied3);
-bool occupied4[40][15];
-std::vector<MaximumEmptyRectangle> temp4 =
-    find_all_maximum_empty_rectangles<40, 15>(occupied4);
+void IGNORE() {
+    // Put hacks for template usage in unit tests here
+    bool occupied1[4][4];
+    std::vector<MaximumEmptyRectangle> temp1 =
+            find_all_maximum_empty_rectangles<4, 4>(occupied1);
+    bool occupied2[2][2];
+    std::vector<MaximumEmptyRectangle> temp2 =
+            find_all_maximum_empty_rectangles<2, 2>(occupied2);
+    bool occupied3[50][50];
+    std::vector<MaximumEmptyRectangle> temp3 =
+            find_all_maximum_empty_rectangles<50, 50>(occupied3);
+    bool occupied4[40][15];
+    std::vector<MaximumEmptyRectangle> temp4 =
+            find_all_maximum_empty_rectangles<40, 15>(occupied4);
+    std::vector<Cuboid> temp_cuboids = {{0, 0, 0, 1, 1, 1}};
+    std::vector<MaximumEmptyCuboid> temp_res = find_all_maximum_empty_cuboids<10, 10>(temp_cuboids, 10);
+}
