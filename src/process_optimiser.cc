@@ -722,7 +722,7 @@ bool process_optimiser_main(const double * box_points,
     }
 }
 
-#define MAIN 0
+#define MAIN 3
 
 #if (MAIN==1)
 int main() {
@@ -766,6 +766,28 @@ int main() {
         cuboids.push_back(items[i]);
         printf("%d %d %d %d %d %d;\n", items[i].x, items[i].y, items[i].z, items[i].length, items[i].width, items[i].height);
     }
+}
+#endif
+
+#if (MAIN==3)
+int main() {
+
+    // items already in the box
+    Cuboid c1 = {20, 20, 0, 40, 30, 40};
+    Cuboid c2 = {25, 30, 40, 10, 10, 10};
+    Cuboid c3 = {60, 25, 0, 15, 10, 12};
+    Cuboid c4 = {30, 60, 0, 10, 10, 30};
+    std::vector<Cuboid> cuboids = {c1, c2, c3, c4};
+
+    // print the candidate MECs
+    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<100, 100>(cuboids, 100);
+
+    for (auto c : candidates) {
+        std::cout << c << std::endl;
+    }
+
+    std::tuple<int, int, int> sol = pick_best_candidate<100, 100>(30, 30, 30, candidates, cuboids);
+    printf("%d %d %d\n", std::get<0>(sol), std::get<1>(sol), std::get<2>(sol));
 }
 #endif
 
