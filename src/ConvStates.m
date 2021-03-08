@@ -3,9 +3,9 @@ classdef ConvStates < Simulink.IntEnumType
     %   to track the active child state of control/State Machine/InConveyorStates.
     
     enumeration
-        None(-1),
+        None(0),
 		Move(1),
-		Wait(0)
+		Wait(2)
     end
 
     methods (Static)
