@@ -715,7 +715,7 @@ bool process_optimiser_main(const double * box_points,
 
     if (ASSERTION_FAILURES > 0) {
         dPrintf(1, "Found %d assertion failures. Stopping the simulation...\n", ASSERTION_FAILURES);
-        throw "STOP";
+        return false; //throw "STOP";
     }
 
     dPrintf(2, "process_optimiser_main: Running phase 1 of the algorithm...\n");
