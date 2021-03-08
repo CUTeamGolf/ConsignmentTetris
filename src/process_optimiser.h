@@ -28,6 +28,8 @@
 #endif
 
 // assertions
+// Soft assertions do not stop execution, but increments a counter if they fail
+// Hard assertions immediately stop execution of they fail
 #ifdef SS_STDIO_AVAILABLE
 # define dAssertSoft(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); ASSERTION_FAILURES++; } } while (0)
 # define dAssertHard(statement, msg, ...) do { if (!(statement)) { ssPrintf("ASSERTION FAILED: " msg "\n", ##__VA_ARGS__); throw "STOPPING EXECUTION BECAUSE OF ASSERTION ERROR"; } } while (0)
@@ -357,6 +359,7 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 #endif
 
 /* -------------------- phase 2 utility methods -------------------- */
+
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 /**
  * Fills the feasible_pos array at entry (x, y) with a 1 if there
@@ -408,6 +411,7 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
                               bool stable_positions[array_length][array_width],
                               const std::vector<Cuboid> &cuboids);
 #endif
+
 /* -------------------- phase 2 driver function -------------------- */
 
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER

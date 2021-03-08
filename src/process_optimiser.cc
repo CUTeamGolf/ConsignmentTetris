@@ -722,7 +722,7 @@ bool process_optimiser_main(const double * box_points,
     }
 }
 
-#define MAIN 3
+#define MAIN 0
 
 #if (MAIN==1)
 int main() {

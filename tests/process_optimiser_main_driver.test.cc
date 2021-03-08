@@ -162,4 +162,26 @@ TEST_CASE( "no stable position" ) {
     REQUIRE( !can_fit );
 }
 
-// TODO: more test cases for when generally full
+TEST_CASE( "box is already full" ) {
+    // the packing box
+    double box_points[] = {-5, -5, -5, 5, 5, 5};
+
+    // with no items
+    double item_points[] = {-2.5, -2.3, -5, 3.1, 4.1, 3.0};
+    int item_points_size = 6;
+    double item_indices[] = {0};
+    int item_indices_size = 1;
+
+    // the item is too high to fit
+    double dims[] = {3.1, 2.8, 2.1};
+
+    double res[3];
+
+    // ACTION
+    bool can_fit = process_optimiser_main(box_points,
+            item_points, item_points_size, item_indices,
+            item_indices_size, dims, res);
+
+    // ASSERT
+    REQUIRE( !can_fit );
+}
