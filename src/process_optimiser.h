@@ -12,7 +12,7 @@
 // the fraction of ground support needed to deem a placement "stable"
 #define STABILITY_SUPPORT_FRACTION 0.6
 // controls amount of debugging info (0 disables debugging)
-#define DEBUG_VERBOSITY 0
+#define DEBUG_VERBOSITY 1
 
 /** debugging macros */
 // basic print statements
