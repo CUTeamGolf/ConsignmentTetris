@@ -694,8 +694,22 @@ bool process_optimiser_main(const double * box_points,
             lz = std::min(lz, item_points[j + 2]);
             uz = std::max(uz, item_points[j + 2]);
         }
+
         // create the bounding box
-        BoxTetromino bt(lx, ly, lz, ux - lx, uy - ly, uz - lz, pb);
+        BoxTetromino bt(lx, ly - (uy - ly), lz, ux - lx, uy - ly, uz - lz, pb);
+        // endgame quick fixes:
+        if (bt.z < 0) {
+            ASSERTION_FAILURES--;
+            bt.z = 0;
+        }
+        if (bt.x < 0) {
+            ASSERTION_FAILURES--;
+            bt.x = 0;
+        }
+        if (bt.y < 0) {
+            ASSERTION_FAILURES--;
+            bt.y = 0;
+        }
         cuboids.push_back(bt);
     }
 
