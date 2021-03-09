@@ -656,6 +656,8 @@ bool process_optimiser_main(const double * box_points,
                             const int item_indices_size,
                             double * tetromino_dimensions,
                             double * tetromino_position) {
+    // Reset assertion counter
+    ASSERTION_FAILURES = 0;
 
     // assume the first co-ordinate is the lower one,
     // second co-ordinate is the higher one
