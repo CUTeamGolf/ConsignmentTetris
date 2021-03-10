@@ -21,7 +21,6 @@ bool Cuboid::operator<(const Cuboid &other) const {
     return this->z + this->height < other.z + other.height;
 }
 
-// TODO: docs
 std::pair<int, int> box_tetromino_constructor_aux(double GRANULARITY, double real_c,
                                    double real_size, double packing_box_c, double packing_box_size) {
     // position of lower left corner
@@ -31,7 +30,7 @@ std::pair<int, int> box_tetromino_constructor_aux(double GRANULARITY, double rea
     return {lower_cord, upper_cord - lower_cord};
 
 }
-// TODO: docs
+
 BoxTetromino::BoxTetromino(double x, double y, double z,
                            double l, double w, double h, const PackingBox & pb) : Cuboid(),
         real_x(x), real_y(y), real_z(z), real_length(l), real_width(w), real_height(h) {
@@ -54,11 +53,11 @@ BoxTetromino::BoxTetromino(double x, double y, double z,
     dAssertSoft(this->x >= 0 && this->x < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed x value is within bounds: 0 <= %d < %d", this->x, MER_LENGTH_GRANULARITY);
     dAssertSoft(this->y >= 0 && this->y < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed y value is within bounds: 0 <= %d < %d", this->y, MER_WIDTH_GRANULARITY);
     dAssertSoft(this->z >= 0 && this->z < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed z value is within bounds: 0 <= %d < %d", this->z, MER_HEIGHT_GRANULARITY);
-    dAssertSoft(this->x + this->length < MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d < %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
+    dAssertSoft(this->x + this->length <= MER_LENGTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in x-dimension is within bounds: x (%d) + l (%d) = %d <= %d", this->x, this->length, this->x + this->length, MER_LENGTH_GRANULARITY);
     dAssertSoft(this->length > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower length: %d", this->length);
-    dAssertSoft(this->y + this->width < MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d < %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
+    dAssertSoft(this->y + this->width <= MER_WIDTH_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in y-dimension is within bounds: y (%d) + w (%d) = %d <= %d", this->y, this->width, this->y + this->width, MER_WIDTH_GRANULARITY);
     dAssertSoft(this->width > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower width: %d", this->width);
-    dAssertSoft(this->z + this->height < MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d < %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
+    dAssertSoft(this->z + this->height <= MER_HEIGHT_GRANULARITY, "Constructing BoxTetromino cuboid: computed length in z-dimension is within bounds: z (%d) + h (%d) = %d <= %d", this->z, this->height, this->z + this->height, MER_HEIGHT_GRANULARITY);
     dAssertSoft(this->height > 0, "Constructing BoxTetromino cuboid: the cuboid has a zero or lower height: %d", this->height);
 
 }
@@ -69,11 +68,13 @@ MaximumEmptyCuboid::MaximumEmptyCuboid(
     this->y = mer.lly;
     this->z = z;
 
+    // the upper right corner has exclusive coordinates
     this->length = mer.urx - mer.llx;
     this->width  = mer.ury - mer.lly;
     this->height = height;
 }
 
+// @see MaximumEmptyCuboid::get_bottom_face_comp in the header file
 #define BOTTOM_FACE_COMP ([](const MaximumEmptyCuboid &cube1, const MaximumEmptyCuboid &cube2) { return cube1.z < cube2.z; })
 //auto MaximumEmptyCuboid::get_bottom_face_comp() {
 //    return [](const MaximumEmptyCuboid &cube1, const MaximumEmptyCuboid &cube2) {
@@ -81,6 +82,7 @@ MaximumEmptyCuboid::MaximumEmptyCuboid(
 //    };
 //}
 
+// @see MaximumEmptyCuboid::get_heuristic_comp in the header file
 #define HEURISTIC_COMP ([](const MaximumEmptyCuboid& cube1, const MaximumEmptyCuboid& cube2) { if (std::tie(cube1.z, cube1.y, cube1.x) == std::tie(cube2.z, cube2.y, cube2.x)) { return (cube1.z * cube1.y * cube1.x) < (cube2.z * cube2.y * cube2.x); } else { return std::tie(cube1.z, cube1.y, cube1.x) < std::tie(cube2.z, cube2.y, cube2.x); } })
 //auto MaximumEmptyCuboid::get_heuristic_comp() {
 //    return [](const MaximumEmptyCuboid& cube1, const MaximumEmptyCuboid& cube2) {
@@ -93,13 +95,12 @@ MaximumEmptyCuboid::MaximumEmptyCuboid(
 //    };
 //}
 
-bool MaximumEmptyCuboid::can_fit_item(int item_length, int item_width, int item_height) {
+bool MaximumEmptyCuboid::can_fit_item(int item_length, int item_width, int item_height) const {
     return this->length >= item_length &&
            this->width >= item_width &&
            this->height >= item_height;
 }
 
-// just for debugging!
 #ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
 std::ostream& operator<<(std::ostream& os, const MaximumEmptyCuboid& mec) {
     // this is how the MATLAB script expects the format to be
@@ -121,7 +122,6 @@ void fill_occupied_space(bool occupied_space[array_length][array_width], const C
     }
 }
 
-// for debugging
 template <size_t array_length, size_t array_width>
 void dPrint_array(int verbosity, bool arr[array_length][array_width]) {
     for (int y = array_width - 1; y >= 0; --y) {
@@ -135,18 +135,19 @@ void dPrint_array(int verbosity, bool arr[array_length][array_width]) {
 /* -------------------- phase 1 utility methods -------------------- */
 
 /**
+ * If we for instance have the following cache results passed:
  *      v- update cache here
  *  - X - 2 1
  *  X X X 1 0
  *  X X - 0 0
  *
- * gives
- *
+ * we should get:
  *  - X 3 2 1
  *  X X 0 1 0
  *  X X 1 0 0
  *
- *  counts the number of contiguous zeros to the right
+ *  by looking at the current entry, and incrementing
+ *  the existing entries if its 0.
  */
 template <size_t array_length, size_t array_width>
 void update_cache(int cache[array_width + 1], int x,
@@ -165,10 +166,13 @@ void update_cache(int cache[array_width + 1], int x,
 }
 
 /**
- * TODO: explain why the rectangles found by find_all_MERs will only
- *   be possible to expand in the -x direction and not any other directions.
- * @param rectangles
- * @return
+ * We know that in the case rectangle A surrounds rectangle B,
+ * the only coordinate difference will be that A.x < B.x,
+ * so we group by the other three coordinates, breaking ties
+ * by the smaller x's.
+ * As a result, when we iterate through this sorted list, if
+ * two adjacent entries are in the same group, we can discard
+ * all subsequent entries beside the first one.
  */
 std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
         std::vector<MaximumEmptyRectangle> & rectangles) {
@@ -210,12 +214,6 @@ std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
  *    +------> x
  */
 /**
- * Given a boolean matrix with 0s and 1s, returns a list of
- * rectangles that satisfy two conditions:
- *  (i) every boolean in the rectangle is a 0
- *  (ii) the rectangle can't be expanded in any of
- *    the 4 possible direction without introducing a 1
- *
  * Algorithm:
  *   for each x-co-ordinate of a lower-left corner of potential rectangle:
  *     for each y-co-ordinate of a upper-right corner of potential rectangle:
@@ -236,16 +234,10 @@ std::vector<MaximumEmptyRectangle> remove_inner_rectangles(
  *     unlikely to be close to M * N, but in the worst
  *     case O(M * N)
  *
- * @tparam array_length size of the first dimension of occupied_space
- * @tparam array_width  size of the second dimension of occupied_space
- * @param occupied_space a boolean matrix
- * @return a std::vector of MaximumEmptyRectangles satisfying (i) and (ii)
- *      as described above.
  */
 template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
         bool occupied_space[array_length][array_width]) {
-    // TODO: ...
     std::vector<MaximumEmptyRectangle> result;
 
     // we have an extra empty slot such that we ensure
@@ -278,9 +270,9 @@ std::vector<MaximumEmptyRectangle> find_all_maximum_empty_rectangles(
                 s.push(std::pair<int, int>(length, y));
                 length = cache[y];
             }
-                // the rectangle we are currently considering
-                // is too long, so save it as a candidate and
-                // start considering shorter ones.
+            // the rectangle we are currently considering
+            // is too long, so save it as a candidate and
+            // start considering shorter ones.
             else if (cache[y] < length) {
                 int prevLength, y0;
                 while (cache[y] < length) {
@@ -318,7 +310,7 @@ template <size_t array_length, size_t array_width>
 std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
         std::vector<Cuboid> cuboids, const int box_height) {
 
-    // sort the cuboids by z-value of top-face in ascending order
+    // sort the cuboids by z-value of top-face in ascending order (z+height)
     std::sort(cuboids.begin(), cuboids.end());
     // in the first iteration of the below loop, we consider the top-face
     // of the highest item, so we don't want to add any occupying items.
@@ -337,7 +329,9 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
     // this is where we store the results
     std::vector<MaximumEmptyCuboid> candidates;
 
-    // TODO: explain base height going down....
+    // we iterate the cuboids in reverse order because as the base_height goes down,
+    // cuboids we've added the "shadow" of, will still shadow the current base_height,
+    // so we don't need to spend time clearing out the "shadows" after each iteration.
     for (int i = cuboids.size() - 1; i >= 0; i--) {
         // this place is not empty anymore when we lower our height
         fill_occupied_space<array_length,
@@ -367,9 +361,13 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 
         dPrintf(5, "find_all_maximum_empty_cuboids: Found %zu candidates:\n", mers.size());
         for (auto & mer : mers) {
-            candidates.emplace_back(mer, base_height, box_height - base_height);
-            dPrintf(5, "  %d %d %d %d %d %d;\n", candidates.back().x, candidates.back().y, candidates.back().z,
-                    candidates.back().length, candidates.back().width, candidates.back().height);
+            if (box_height - base_height > 0) {
+                candidates.emplace_back(mer, base_height, box_height - base_height);
+                dPrintf(5, "  %d %d %d %d %d %d;\n", candidates.back().x, candidates.back().y, candidates.back().z,
+                        candidates.back().length, candidates.back().width, candidates.back().height);
+            } else {
+                dPrintf(5, "  Skipped a candidate due to zero-height\n");
+            }
         }
     }
 
@@ -378,14 +376,12 @@ std::vector<MaximumEmptyCuboid> find_all_maximum_empty_cuboids(
 
 /* -------------------- phase 2 utility methods -------------------- */
 
-
-// modifies the feasible_pos array to only be true where the manipulator arm
-// can fit (i.e. feasibly place the item) when z is some value
-// empty_spaces = copy of candidates sorted by z in ascending order and with dummy box at height -1
-//   TODO: is -1 because seperate from boxes at 0
-// item_height  = height of the item to place
-// TODO: optimisation, can cache results based on z since we sort by z anyways
-//   so only recompute when z changes
+/**
+ * To figure out if the manipulator can reach down manipulator_height, we consider
+ * all the MECs with a z value lower than this height. Since the set of MECs at height z
+ * will be redundant in the face of the MECs at height z' > z, we only consider the MECs
+ * at the first height that is lower than manipulator_height for efficiency.
+ */
 template <size_t array_length, size_t array_width>
 void compute_reachable_positions(int item_length, int item_width, int manipulator_height,
                                                      bool feasible_pos[array_length][array_width],
@@ -409,7 +405,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
     auto c = std::upper_bound(empty_spaces.begin(), empty_spaces.end(), temp, BOTTOM_FACE_COMP);
 
     // subtracting one gives the last MEC with a height lower than manipulator_height, and this should exist
-    // because of the dummy box added before invokign this function.
+    // because of the dummy box added before invoking this function.
     dAssertHard(c != empty_spaces.begin() && !empty_spaces.empty(),
             "compute_reachable_positions: The upper_bound is valid.");
 
@@ -419,7 +415,7 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
     dPrintf(2, "compute_reachable_positions: basing reachability at height %d on MECs with base z=%d\n",
             manipulator_height, mec_base_z);
 
-    // we add one to round up (TODO: explain why?)
+    // we add one to round up (why?)
     int x_offset = std::max((ROBOT_ARM_LENGTH - item_length + 1) / 2, 0);
     int y_offset = std::max((ROBOT_ARM_WIDTH - item_width + 1) / 2, 0);
 
@@ -441,15 +437,6 @@ void compute_reachable_positions(int item_length, int item_width, int manipulato
     dPrint_array<array_length,array_width>(5, feasible_pos);
 }
 
-/**
- * TODO: explain!
- *
- * cuboids must be sorted!
- * @param item_length
- * @param item_width
- * @param cuboids
- * @return
- */
 template <size_t array_length, size_t array_width>
 void compute_stable_positions(int item_length, int item_width, int base_height,
                               bool stable_positions[array_length][array_width],
@@ -470,8 +457,6 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
         dAssertHard(i == 0 || !(cuboids[i].z + cuboids[i].height < cuboids[i - 1].z + cuboids[i - 1].height),
                 "compute_stable_positions: The cuboids passed are sorted in ascending order by top-face");
     }
-
-    // TODO: this parameter has to be the same as the other one!
 
     // assume no stable ground at all
     bool ground[array_length][array_width];
@@ -559,43 +544,16 @@ void compute_stable_positions(int item_length, int item_width, int base_height,
             }
             dAssertHard(supportingEntries >= 0, "We found a positive amount of supporting entries.");
 
-            // is it stable
+            // is it stable?
             double support_fraction = double(supportingEntries) /
                     double(item_width * item_length);
             stable_positions[llx][lly] = (support_fraction > STABILITY_SUPPORT_FRACTION);
         }
     }
-
-    // TODO: remove this stub
-//    this->stable_position = std::make_pair(5, 6);
-//    this->has_computed_stable_position = true;
-//    return true;
 }
-
-//std::tuple<int, int, int> MaximumEmptyCuboid::get_stable_position() {
-////    return std::make_tuple(1, 2, 6);
-//    if (!this->has_computed_stable_position) {
-//        throw std::runtime_error("Attempt to get stable position when "
-//                                 "it doesn't exist or hasn't been computed.");
-//    } else {
-//        return {this->stable_position.first, this->stable_position.second, this->z};
-//    }
-//}
 
 /* -------------------- phase 2 driver function -------------------- */
 
-/**
- * TODO: docs
- *
- * cuboids must be sorted in non-decreasing order by (z+height)!
- *
- * @param length
- * @param width
- * @param height
- * @param candidates
- * @param cuboids
- * @return
- */
 template <size_t array_length, size_t array_width>
 std::tuple<int, int, int> pick_best_candidate(
                           int length, int width, int height,
@@ -605,15 +563,16 @@ std::tuple<int, int, int> pick_best_candidate(
     // sort the candidates first because filtering is more expensive
     std::sort(candidates.begin(), candidates.end(), HEURISTIC_COMP);
 
-    // used to decide whether the manipulator arm can reach certain spots
+    // empty_spaces is used by compute_reachable_positions to decide
+    // whether the manipulator arm can reach certain spots
     std::vector<MaximumEmptyCuboid> empty_spaces(candidates); // copy
-    // We set the height to -1 to disambiguate the dummy from actual EMC at z=0
-    MaximumEmptyCuboid dummy_packing_box({0,0,array_length,array_width}, -1, 0);
+    // We set the height to -1 to disambiguate the dummy from actual EMCs at z=0
+    MaximumEmptyCuboid dummy_packing_box({0,0, array_length,array_width}, -1, 0);
     empty_spaces.push_back(dummy_packing_box);
     // sort the EMSs in ascending order by their base z value
     std::sort(empty_spaces.begin(), empty_spaces.end(), BOTTOM_FACE_COMP);
 
-    // sort the cuboids by ascending z
+    // sort the cuboids by ascending z+height
     std::sort(cuboids.begin(), cuboids.end());
 
     bool feasible_positions[array_length][array_width];
@@ -627,11 +586,10 @@ std::tuple<int, int, int> pick_best_candidate(
                 candidate.length, candidate.width, candidate.height);
         if (candidate.can_fit_item(length, width, height)) {
             dPrintf(3, "can fit item\n");
-            // TODO: only recompute when candidate.z changes
+            // TODO: optimisation: only recompute when candidate.z changes because results always the same for same z
             compute_reachable_positions<array_length, array_width>(length, width, candidate.z + height, feasible_positions, empty_spaces);
             compute_stable_positions<array_length, array_width>(length, width, candidate.z, stable_positions, cuboids);
 
-            // TODO: iterate (llx, lly)s and use the first one that is both stable and reachable
             for (int lly = candidate.y; lly < candidate.y + candidate.width - width + 1; ++lly) {
                 for (int llx = candidate.x; llx < candidate.x + candidate.length - length + 1; ++llx) {
                     if (stable_positions[llx][lly] && feasible_positions[llx][lly]) {
@@ -655,11 +613,11 @@ bool process_optimiser_main(const double * box_points,
                             const double * item_indices, // ?
                             const int item_indices_size,
                             double * tetromino_dimensions,
-                            double * tetromino_position) {
+                            double * result_position) {
     // Reset assertion counter
     ASSERTION_FAILURES = 0;
 
-    // assume the first co-ordinate is the lower one,                    !
+    // assume the first co-ordinate is the lower one,
     // second co-ordinate is the higher one
     PackingBox pb = {box_points[0], box_points[4], box_points[2],
                      box_points[3] - box_points[0],
@@ -749,22 +707,22 @@ bool process_optimiser_main(const double * box_points,
             std::get<0>(best_cand), std::get<1>(best_cand), std::get<2>(best_cand));
 
     // convert the resulting co-ordinates back to the simulink co-ordinate system
-    tetromino_position[0] = double(std::get<0>(best_cand)) * pb.length / double(MER_LENGTH_GRANULARITY) + pb.x;
-    tetromino_position[1] = double(std::get<1>(best_cand)) * pb.width / double(MER_WIDTH_GRANULARITY) + box_points[1];
-    tetromino_position[2] = double(std::get<2>(best_cand)) * pb.height / double(MER_HEIGHT_GRANULARITY) + pb.z;
+    result_position[0] = double(std::get<0>(best_cand)) * pb.length / double(MER_LENGTH_GRANULARITY) + pb.x;
+    result_position[1] = double(std::get<1>(best_cand)) * pb.width / double(MER_WIDTH_GRANULARITY) + pb.y;
+    result_position[2] = double(std::get<2>(best_cand)) * pb.height / double(MER_HEIGHT_GRANULARITY) + pb.z;
 
     dPrintf(2, "process_optimiser_main: Returning position (%f, %f, %f)\n",
-            tetromino_position[0], tetromino_position[1], tetromino_position[2]);
+            result_position[0], result_position[1], result_position[2]);
 
     // return true if the item fits
-    if (tetromino_position[0] == -1) {
+    if (std::get<0>(best_cand) == -1) {
         return false;
     } else {
         return true;
     }
 }
 
-#define MAIN 2
+#define MAIN 0
 
 #if (MAIN==1)
 int main() {
@@ -797,16 +755,6 @@ int main() {
     Cuboid c9 = {-1, -1, -1, 10, 50, 60};
     Cuboid c10 = {-1, -1, -1, 10, 10, 10};
 
-//    Cuboid c1 = {-1, -1, -1, 12, 12, 12};
-//    Cuboid c2 = {-1, -1, -1, 50, 50, 50};
-//    Cuboid c3 = {-1, -1, -1, 30, 30, 30};
-//    Cuboid c4 = {-1, -1, -1, 30, 30, 30};
-//    Cuboid c5 = {-1, -1, -1, 40, 40, 40};
-//    Cuboid c6 = {-1, -1, -1, 20, 20, 40};
-//    Cuboid c7 = {-1, -1, -1, 40, 40, 60};
-//    Cuboid c8 = {-1, -1, -1, 40, 60, 30};
-//    Cuboid c9 = {-1, -1, -1, 10, 10, 10};
-//    Cuboid c10 = {-1, -1, -1, 50, 50, 5};
     std::vector<Cuboid> items = {c1, c2, c3, c4, c5, c6, c7, c8, c9, c10};
 
     for (int i = 0; i < items.size(); ++i) {
@@ -821,55 +769,42 @@ int main() {
 }
 #endif
 
-//#ifdef GET_FULL_PROCESS_OPTIMISER_HEADER
-//int main() {
-//    double box_points[] = {0,0,0,10,10,10};
-//    double item_points[] = {10,10,0,20,20,10,30,30,30,40,40,40};
-//    double item_indices[] = {1, 7};
-//
-//    double result[3];
-//    process_optimiser_main(box_points, item_points, 12, item_indices, 2, result);
-////    printf("%f %f %f\n", result[0], result[1], result[2]);
-//
-////    std::vector<Cuboid> cubes;
-////    cubes.push_back({0, 0, 0, 10, 10, 15});
-////    cubes.push_back({20, 0, 0, 10, 10, 11});
-////    std::vector<MaximumEmptyCuboid> mecs = find_all_maximum_empty_cuboids<25, 25>(cubes, 25);
-////    // TODO: add below code to driver function
-////    MaximumEmptyCuboid packing_box({0,0,25,25}, -1, 0);
-////    mecs.push_back(packing_box);
-////    std::sort(mecs.begin(), mecs.end(), MaximumEmptyCuboid::get_bottom_face_comp());
-////
-////    for (auto &cube : mecs) {
-////        std::cout << cube << std::endl;
-////        bool feas[25][25];
-////        cube.compute_reachable_positions<25, 25>(5, 5, 10, feas, mecs, 1);
-////        for (int y = 24; y >= 0; y--) {
-////            for (int x = 0; x < 25; ++x) {
-////                std::cout << (feas[x][y] ? "x" : "-");
-////            }
-////            std::cout << std::endl;
-////        }
-////    }
-//
-//
-//    return 0;
-//}
-//#endif
+#if (MAIN==3)
+int main() {
 
-// TODO: add method for finding (llx, lly) and (urx, ury) that are feasable to
-//   actually place the item in:
-//   * given candidates, to binary search to find the ones with z being just lower or
-//     equal to height of face of this one were we place it in this MEC
-//   * iterate these ones to find the above co-ords, use the one with lowest llx, lly
-//     and then use the urx, ury of this one regardless of the ur position (or else
-//     too complex *sigh*)
-//   * special case when actual item larger than the robot bounding box
-//   All this is passed to the stability checker which limits itself checking these spots
+    // items already in the box
+    Cuboid c1 = {20, 20, 0, 40, 30, 40};
+    Cuboid c2 = {25, 30, 40, 10, 10, 10};
+    Cuboid c3 = {60, 25, 0, 15, 10, 12};
+    Cuboid c4 = {30, 60, 0, 10, 10, 30};
+    std::vector<Cuboid> cuboids = {c1, c2, c3, c4};
 
+    // print the candidate MECs
+    std::vector<MaximumEmptyCuboid> candidates = find_all_maximum_empty_cuboids<100, 100>(cuboids, 100);
 
+    for (auto c : candidates) {
+        std::cout << c << std::endl;
+    }
 
-//// Put hacks for template usage in unit tests here
-bool occupied[4][4];
-std::vector<MaximumEmptyRectangle> temp = find_all_maximum_empty_rectangles<4, 4>(occupied);
-// ...
+    std::tuple<int, int, int> sol = pick_best_candidate<100, 100>(30, 30, 30, candidates, cuboids);
+    printf("%d %d %d\n", std::get<0>(sol), std::get<1>(sol), std::get<2>(sol));
+}
+#endif
+
+// Put hacks for template usage in unit tests here
+void IGNORE() {
+    bool occupied1[4][4];
+    std::vector<MaximumEmptyRectangle> temp1 =
+            find_all_maximum_empty_rectangles<4, 4>(occupied1);
+    bool occupied2[2][2];
+    std::vector<MaximumEmptyRectangle> temp2 =
+            find_all_maximum_empty_rectangles<2, 2>(occupied2);
+    bool occupied3[50][50];
+    std::vector<MaximumEmptyRectangle> temp3 =
+            find_all_maximum_empty_rectangles<50, 50>(occupied3);
+    bool occupied4[40][15];
+    std::vector<MaximumEmptyRectangle> temp4 =
+            find_all_maximum_empty_rectangles<40, 15>(occupied4);
+    std::vector<Cuboid> temp_cuboids = {{0, 0, 0, 1, 1, 1}};
+    std::vector<MaximumEmptyCuboid> temp_res = find_all_maximum_empty_cuboids<10, 10>(temp_cuboids, 10);
+}
