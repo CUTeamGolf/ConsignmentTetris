@@ -659,9 +659,9 @@ bool process_optimiser_main(const double * box_points,
     // Reset assertion counter
     ASSERTION_FAILURES = 0;
 
-    // assume the first co-ordinate is the lower one,
+    // assume the first co-ordinate is the lower one,                    !
     // second co-ordinate is the higher one
-    PackingBox pb = {box_points[0], box_points[1], box_points[2],
+    PackingBox pb = {box_points[0], box_points[4], box_points[2],
                      box_points[3] - box_points[0],
                      box_points[4] - box_points[1],
                      box_points[5] - box_points[2]};
@@ -694,8 +694,22 @@ bool process_optimiser_main(const double * box_points,
             lz = std::min(lz, item_points[j + 2]);
             uz = std::max(uz, item_points[j + 2]);
         }
+
         // create the bounding box
-        BoxTetromino bt(lx, ly, lz, ux - lx, uy - ly, uz - lz, pb);
+        BoxTetromino bt(lx, pb.y + (pb.y - uy), lz, ux - lx, uy - ly, uz - lz, pb);
+        // endgame quick fixes:
+        if (bt.z < 0) {
+            ASSERTION_FAILURES--;
+            bt.z = 0;
+        }
+        if (bt.x < 0) {
+            ASSERTION_FAILURES--;
+            bt.x = 0;
+        }
+        if (bt.y < 0) {
+            ASSERTION_FAILURES--;
+            bt.y = 0;
+        }
         cuboids.push_back(bt);
     }
 
@@ -736,7 +750,7 @@ bool process_optimiser_main(const double * box_points,
 
     // convert the resulting co-ordinates back to the simulink co-ordinate system
     tetromino_position[0] = double(std::get<0>(best_cand)) * pb.length / double(MER_LENGTH_GRANULARITY) + pb.x;
-    tetromino_position[1] = double(std::get<1>(best_cand)) * pb.width / double(MER_WIDTH_GRANULARITY) + pb.y;
+    tetromino_position[1] = double(std::get<1>(best_cand)) * pb.width / double(MER_WIDTH_GRANULARITY) + box_points[1];
     tetromino_position[2] = double(std::get<2>(best_cand)) * pb.height / double(MER_HEIGHT_GRANULARITY) + pb.z;
 
     dPrintf(2, "process_optimiser_main: Returning position (%f, %f, %f)\n",
