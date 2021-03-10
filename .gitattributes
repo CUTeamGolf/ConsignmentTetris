@@ -26,3 +26,9 @@
 *.pdf binary
 *.png binary
 *.xlsx binary
+
+## We didn't code these
+Simscape-Multibody-Contact-Forces-Library-20.2.5.0/* linguist-vendored
+externals/catch2/* linguist-vendored
+main_codegen_kinematics/* linguist-vendored
+tests/process_optimiser_find_all_maximum_empty_rectangles.test.cc linguist-vendored
